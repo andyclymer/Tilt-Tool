@@ -1,10 +1,12 @@
-from fontTools.designspaceLib import DesignSpaceDocument, AxisDescriptor, SourceDescriptor, RuleDescriptor
-#from fontParts.world import OpenFont
-from ac.data.names import getUniqueName
-from ac.xtra.euclid import *
-from ac.pens.outlineFitterPen import OutlineFitterPen, MathPoint
 import math
 import os
+from fontTools.designspaceLib import DesignSpaceDocument, AxisDescriptor, SourceDescriptor, RuleDescriptor
+from fontParts.world import OpenFont, NewFont
+from defcon import Font
+
+from euclid import *
+# Packaged with the Outliner extension
+from outlineFitterPen import OutlineFitterPen, MathPoint
 
 
 
@@ -22,9 +24,21 @@ def getIdent(pt, pointData={}):
     # Get the point name, and set a name if one doesn't exist
     ident = pt.name
     if ident == None:
-        ident = getUniqueName(kind="waypoint", otherNames=list(pointData.keys()))
+        ident = makeUniqueName()
         pt.name = ident
     return ident
+
+
+def makeUniqueName(length=None):
+    if not length:
+        length = 8
+    name = ""
+    for i in range(length):
+        name += random.choice("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    return name
+
+
+
 
 
 ZPOSITIONLIBKEY = "com.andyclymer.zPosition"
@@ -222,7 +236,7 @@ def rotateGlyph(g, sourceInfo, pointData, angle=45, aLoc=None):# valueX=0, value
             ident = pt.name#getIdentifier()
             if ident == None:
                 allNames = pointData.keys()
-                ident = getUniqueName(kind="waypoint", otherNames=allNames)
+                ident = makeUniqueName()
                 pt.name = ident
             
             #v = pointData[ident].copy()
@@ -376,7 +390,8 @@ def buildDesignSpace(
     
     """ Make the source UFOs and SourceDescriptors """
         
-    masterFont = OpenFont(masterPath, showInterface=False)
+    masterFont = OpenFont(path=masterPath, showInterface=False)
+    #masterFont = Font(masterPath)
         
     for sourceInfo in sourceCombinations:
         # Build a filename
@@ -395,7 +410,7 @@ def buildDesignSpace(
         sourceUfoPath = os.path.join(destPath, fileName)
         sourceInfo["fileName"] = fileName
         if not os.path.exists(sourceUfoPath):
-            sourceFont = NewFont(showUI=False)
+            sourceFont = NewFont(showInterface=False)
             sourceFont.save(sourceUfoPath)
             sourceFont.info.familyName = familyName
             sourceFont.info.styleName = styleName
@@ -452,7 +467,8 @@ def buildDesignSpace(
     # Process each UFO source, one at a time
     for sourceInfo in sourceCombinations:
         sourceUfoPath = os.path.join(destPath, sourceInfo["fileName"])
-        sourceFont = OpenFont(sourceUfoPath, showInterface=False)
+        sourceFont = OpenFont(path=sourceUfoPath, showInterface=False)
+        #sourceFont = Font(sourceUfoPath)
         
         for gName in glyphPointData:
             pointData = glyphPointData[gName].copy()
@@ -586,16 +602,3 @@ def buildDesignSpace(
     
     
 
-
-
-buildDesignSpace(
-    masterPath="/Users/clymer/Documents/Code/Git repos/Bitbucket/sketch-python/Neon tool/Design sketching 002/Hook test 3/Hook3.ufo", 
-    destPath="/Users/clymer/Documents/Code/Git repos/Bitbucket/sketch-python/Neon tool/Design sketching 002/Hook test 3/Rotated", 
-    glyphNames="A",
-    compositionType="rotate", 
-    outlineAmount=30, 
-    forceSmooth=True,
-    overlappingCurveFix=True,
-    familyName="Hook",
-    styleName="Regular")
-    
