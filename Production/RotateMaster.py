@@ -330,6 +330,8 @@ def buildDesignSpace(
         glyphNames=[],
         compositionType="rotate", 
         outlineAmount=None, 
+        zOffset=None, 
+        shadowLengthFactor=1,
         forceSmooth=False,
         overlappingCurveFix=False,
         familyName=None,
@@ -485,6 +487,9 @@ def buildDesignSpace(
             #if "SANG" in sourceInfo.keys():
             #    for ident in pointData:
             #        pointData[ident]["z"] += 200
+            if zOffset:
+                for ident in pointData:
+                    pointData[ident]["z"] += zOffset
         
             # Extend the shadow
             if "SANG" in sourceInfo.keys():
@@ -493,10 +498,10 @@ def buildDesignSpace(
                     shadowDirection = "left"
                 else: shadowDirection = "right"
                 if sourceInfo["SLEN"] == "minimum":
-                    shadowLengthFactor = 0
-                else: shadowLengthFactor = 1
+                    finalShadowLengthFactor = 0
+                else: finalShadowLengthFactor = shadowLengthFactor
                 #pointData = flattenShadow(gDest, pointData, shadowDirection, shadowLengthFactor * 2)
-                pointData = flattenShadow(gDest, pointData, shadowDirection, shadowLengthFactor)
+                pointData = flattenShadow(gDest, pointData, shadowDirection, finalShadowLengthFactor)
         
             # Rotate the glyph
             pointData = rotateGlyphPointData(gDest, sourceInfo, pointData)
