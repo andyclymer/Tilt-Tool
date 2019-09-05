@@ -7,7 +7,7 @@ buildDesignSpace(
     compositionType="rotate and shadow", 
     outlineAmount=10, 
     shadowLengthFactor=1.5,
-    forceSmooth=True,
+    doForceSmooth=True,
     overlappingCurveFix=False,
     familyName="Tilt M Shad",
     styleName="Regular")

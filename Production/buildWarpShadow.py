@@ -6,7 +6,7 @@ buildDesignSpace(
     glyphNames=[n for n in "ADEGHINORSUaehilnopst"]+["period"],
     compositionType="rotate and shadow", 
     outlineAmount=0, 
-    forceSmooth=False,
+    doForceSmooth=False,
     overlappingCurveFix=False,
     familyName="Tilt Warp Shadow",
     styleName="Regular")

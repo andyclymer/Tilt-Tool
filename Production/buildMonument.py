@@ -6,7 +6,7 @@ buildDesignSpace(
     glyphNames=[n for n in "ADEGHINORSU"]+["period"],
     compositionType="rotate", 
     outlineAmount=10, 
-    forceSmooth=True,
+    doForceSmooth=True,
     overlappingCurveFix=False,
     familyName="Tilt Monument",
     styleName="Regular")

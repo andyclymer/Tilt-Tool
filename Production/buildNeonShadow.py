@@ -6,7 +6,7 @@ buildDesignSpace(
     glyphNames=[n for n in "ADEGHINORSUaehilnopst"]+["period"],
     compositionType="rotate and shadow", 
     outlineAmount=50, 
-    forceSmooth=True,
+    doForceSmooth=True,
     overlappingCurveFix=True,
     familyName="Tilt Neon Shad",
     styleName="Regular")

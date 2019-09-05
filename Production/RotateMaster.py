@@ -123,12 +123,75 @@ def testPointAlignent(bPt, pointData, angleError=0.1):
                 thisIdent = getIdent(prevBPt._point)
                 if pointData[thisIdent]["z"] < pointData[prevIdent]["z"]:
                     return bPt, thisAngle
-                else: return prevBPt, thisAngle
+                else:
+                    return prevBPt, thisAngle
     return False
     
-
-
+    
+    
 def fixPointAlignment(g, pointData):
+    # Prepare new glyphs for the glyph rotation rules, and shift the points in the direction they'll be moving
+    # "nw" is the default, other directions are "ne", "sw", "se"
+    #extensions = [(".ne", (4, -4)), (".sw", (-4, 4)), (".se", (4, 4)), (None, (-4, -4))]
+    extensions = [(".ne", (1, -1)), (".sw", (-1, 1)), (".se", (1, 1)), (None, (-1, -1))]
+    # Make new glyphs
+    newGlyphs = []
+    font = g.font
+    for extension, offset in extensions:
+        if extension:
+            newGlyphName = g.name + extension
+            font.newGlyph(newGlyphName)
+            ng = font[newGlyphName]
+            ng.clear()
+            ng.appendGlyph(g)
+            ng.width = g.width
+            ng.lib[ZPOSITIONLIBKEY] = copy.deepcopy(g.lib[ZPOSITIONLIBKEY])
+            newGlyphs.append(ng)
+    # Find some minimum and maximums in the glyph "z" depth
+    zMin = None
+    zMax = None
+    for ident in pointData:
+        z = pointData[ident]["z"]
+        if not zMin:
+            zMin = z
+        elif z < zMin:
+            zMin = z
+        if not zMax:
+            zMax = z
+        elif z > zMax:
+            zMax = z
+    zRange = zMax-zMin
+    zMid = (zMax+zMin)*0.5
+    # Shift points
+    for cIdx, c in enumerate(g.contours):
+        for pIdx, pt in enumerate(c.points):
+            ident = getIdent(pt)
+            if ident in pointData:
+                z = pointData[ident]["z"]
+                f = (z-zMid)/zRange
+                for extension, offset in extensions:
+                    if extension:
+                        thisGlyphName = g.name + extension
+                    else: thisGlyphName = g.name
+                    # Move points
+                    thisGlyph = font[thisGlyphName]
+                    thisOffset = (f*offset[0], f*offset[1])
+                    thisPt = thisGlyph.contours[cIdx].points[pIdx]
+                    thisPt.moveBy(thisOffset)
+                    # Update lib data
+                    #ng.lib[ZPOSITIONLIBKEY][ident] = dict(
+                    #    x=pointData[ident]["x"]+offset[0], 
+                    #    y=pointData[ident]["y"]+offset[1], 
+                    #    z=pointData[ident]["z"])
+                    ng.changed()
+    return newGlyphs
+                
+                
+                
+
+
+
+def fixPointAlignmentOLD(g, pointData):
     # Find any overlapping points that need to move
     # Build new glyphs in the master font with nudged points
     # Return info about the change so that it cna prepare rules
@@ -181,13 +244,20 @@ def fixPointAlignment(g, pointData):
             ng.clear()
             ng.appendGlyph(g)
             ng.width = g.width
+            
             libData = {}
             for ident in pointData:
-                libData[ident] = pointData[ident]["z"]
+                if ident in idents:
+                    libData[ident] = dict(
+                        x=pointData[ident]["x"]+offset[0], 
+                        y=pointData[ident]["y"]+offset[1], 
+                        z=pointData[ident]["z"])
+                else: libData[ident] = pointData[ident].copy()
             ng.lib[ZPOSITIONLIBKEY] = libData#pointData.copy()
+            
             newGlyphs.append(ng)
         else:
-            # No extension, this is just hte base glyph that needs to move
+            # No extension, this is just the base glyph that needs to move
             ng = g
         # Move points
         for c in ng.contours:
@@ -307,7 +377,7 @@ def flattenShadow(g, pointData, shadowDirection="right", shadowLengthFactor=1):
     return pointData
 
 
-def outlineGlyph(g, offsetAmount, contrast=0, contrastAngle=0):
+def outlineGlyph(g, offsetAmount, contrast=0, contrastAngle=0, alwaysConnect=False):
     """
     Outline a glyph
     """
@@ -315,7 +385,7 @@ def outlineGlyph(g, offsetAmount, contrast=0, contrastAngle=0):
     gl = g.getLayer("background")
     gl.appendGlyph(g)
     # Outline
-    pen = OutlineFitterPen(None, offsetAmount, connection="Round", cap="Round", closeOpenPaths=True, alwaysConnect=True, contrast=contrast, contrastAngle=contrastAngle) 
+    pen = OutlineFitterPen(None, offsetAmount, connection="Round", cap="Roundsimple", closeOpenPaths=True, alwaysConnect=alwaysConnect, contrast=contrast, contrastAngle=contrastAngle) 
     g.draw(pen)
     g.clear()
     pen.drawSettings(drawOriginal=False, drawInner=True, drawOuter=True)
@@ -332,9 +402,10 @@ def buildDesignSpace(
         outlineAmount=None, 
         zOffset=None, 
         shadowLengthFactor=1,
-        forceSmooth=False,
-        overlappingCurveFix=False,
+        doForceSmooth=False,
+        overlappingCurveFix=False, #@@@
         familyName=None,
+        alwaysConnect=False,
         styleName=None):
     
     # Set up masters
@@ -451,8 +522,12 @@ def buildDesignSpace(
             # and the new glyph will have all of the proper point data in its lib
             ruleConditionGlyphs = fixPointAlignment(g, pointData)
             for ruleGlyph in ruleConditionGlyphs:
-                # Copy the point data to the dict
-                glyphPointData[ruleGlyph.name] = copy.deepcopy(glyphPointData[gName])
+                # Build new glyph point data for this glyph
+                glyphPointData[ruleGlyph.name] = {}
+                for c in ruleGlyph.contours:
+                    for pt in c.points:
+                        ident = getIdent(pt)
+                        glyphPointData[ruleGlyph.name][ident] = dict(x=pt.x, y=pt.y, z=glyphPointData[gName][ident]["z"])
                 # Organize these new glyphs into their categories
                 extensions = ruleConditionCategories.keys() # ["s", "e", "ne", "se", "sw"]
                 for extension in ruleConditionCategories.keys():
@@ -513,6 +588,17 @@ def buildDesignSpace(
                     if ident in pointData:
                         pt.x = pointData[ident]["x"]
                         pt.y = pointData[ident]["y"]
+            
+            if doForceSmooth:
+                print("forceSmooth")
+                # If a bPoint was a smooth curve point in the original glyph,
+                # force the related bPoint in the rotated glyph to be smooth
+                for cIdx, c in enumerate(gDest.contours):
+                    for bptIdx, thisBPt in enumerate(c.bPoints):
+                        sourceBPt = g.contours[cIdx].bPoints[bptIdx]
+                        if sourceBPt.type == "curve":
+                            forceSmooth(thisBPt)
+
         
             # Outline the glyph
             if outlineAmount:
@@ -528,7 +614,7 @@ def buildDesignSpace(
                 #         elif sourceInfo["SANG"] == "minimum":
                 #             contrastAngle = 45
                 # Outline
-                outlineGlyph(gDest, outlineAmount)
+                outlineGlyph(gDest, outlineAmount, alwaysConnect=alwaysConnect)
                 # @@@ and use contrast if its' a shaodw
         
             # Update
