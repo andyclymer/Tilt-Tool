@@ -7,6 +7,8 @@ import math
 import os
 import copy
 
+import outlineFitterPen
+print(outlineFitterPen.__file__)
 
 
 AXISINFO = {
@@ -16,7 +18,7 @@ AXISINFO = {
     "SLEN": dict(name="Shadow Length", minimum=0, maximum=100, default=100),
     "SANG": dict(name="Shadow Angle", minimum=-45, maximum=45, default=45)}
 AXISORDER = ["HROT", "VROT", "DPTH", "SLEN", "SANG"]
-
+SLIGHTLYOFFAXIS = 0.01
 
 
 def getIdent(pt, pointData={}):
@@ -75,211 +77,81 @@ def forceSmooth(bPt):
         newOut = MathPoint(math.cos(avgAngle), math.sin(avgAngle)) * distOut
         bPt.bcpIn = (newIn.x, newIn.y)
         bPt.bcpOut = (-newOut.x, -newOut.y) 
+        
 
 
-def testPointAlignent(bPt, pointData, angleError=0.1):
-    """
-    Test to see if a bPoint and its previous neighbor have BCPs that are in alignment
-    """
-    c = bPt.contour
-    idx = bPt.index
-    if c.open and idx in [0, 1]:
-        # First point on an open contour, no problem here
-        return False
+def checkCurveSegmentOverlap(pt0, pt1, pt2, pt3):
+    # Check to see if this curve segment overlaps back on itself
+    # (i.e. a "hook" segment)
+    p0 = MathPoint(*pt0)
+    p1 = MathPoint(*pt1)
+    p2 = MathPoint(*pt2)
+    p3 = MathPoint(*pt3)
+    # Angles
+    a1 = math.degrees(p0.angle(p1)) # first anchor to its bcp
+    a2 = math.degrees(p3.angle(p2)) # second anchor to its bcp
+    a3 = math.degrees(p0.angle(p2)) # anchor to anchor
+    a4 = math.degrees(p3.angle(p1)) # anchor to anchor
+    # Compare angles
+    error = 0.6
+    doOverlap = False
+    if a1-error < a2 < a1+error: # BCPs match angle
+        if a1-error < a3 < a1+error: # bcpOut to bcpIn matches angle
+            doOverlap = True
+        elif a1-error < a4 < a1+error: # bcpOut to next anchor matches angle
+            doOverlap = True
+    # If they overlap...
+    if not doOverlap:
+        return []
     else:
-        prevBPt = c.bPoints[idx-1]
-        if [0, 0] in [prevBPt.bcpOut, prevBPt.bcpIn]:
-            # There are no handles, no problem here
-            return False
-        else:
-            # Make MathPoints
-            prevAnchor = MathPoint(prevBPt.anchor)
-            thisBcpOut = MathPoint(prevBPt.bcpOut)
-            prevBCP = prevAnchor + thisBcpOut
-            thisAnchor = MathPoint(bPt.anchor)
-            thisBcpIn = MathPoint(bPt.bcpIn)
-            thisBCP = thisAnchor + thisBcpIn
-            # Find angles
-            thisAngle = thisBCP.angle(thisAnchor)
-            if not thisAngle: thisAngle = 0
-            prevAngle = prevBCP.angle(prevAnchor)
-            if not prevAngle: prevAngle = 0
-            # If the angles are already within error range
-            if abs(thisAngle - prevAngle) < angleError:
-                # Test all combinations of bcps and anchors
-                avg = (thisAngle + prevAngle) * 0.5
-                testAngles = [
-                    thisBCP.angle(prevAnchor),
-                    thisBCP.angle(prevBCP),
-                    prevBCP.angle(thisAnchor),
-                    thisAnchor.angle(prevAnchor)]
-                # If any of these are over the error amount, they don't overlap
-                for testAngle in testAngles:
-                    if abs(thisAngle - prevAngle) > angleError:
-                        return False
-                # All test angles were under the limit
-                # Find which point is further back, that's the one that will move
-                prevIdent = getIdent(bPt._point)
-                thisIdent = getIdent(prevBPt._point)
-                if pointData[thisIdent]["z"] < pointData[prevIdent]["z"]:
-                    return bPt, thisAngle
-                else:
-                    return prevBPt, thisAngle
-    return False
+        # ...return the axis they overlap on
+        if p0[0] == p1[0]:
+            return ["x"]
+        elif p0[1] == p1[1]:
+            return ["y"]
+        else: return ["x", "y"]
     
     
+def checkCurveOverlap(glyph):
+    # Test all segments in the glyph to see if any overlap with themselves
+    # Return a list of "x" and "y" for the axis that the overlap aligns on
+    prevPrevSeg = None
+    prevSeg = None
+    glyphResults = []
+    for c in glyph.contours:
+        for s in c.segments:
+            # Check the points in this segment (using the last point of the prevSeg)
+            toTest = []
+            if prevSeg:
+                if len(s.points) == 3: # Curve segments only
+                    prevPoint = prevSeg.points[-1]
+                    pts = [prevPoint] + list(s.points)
+                    pts = [(pt.x, pt.y) for pt in pts]
+                    toTest.append(pts)
+                    # If the prevPrevSeg was a curve, compare this seg to that seg
+                    if prevPrevSeg:
+                        if len(prevPrevSeg.points) == 3:
+                            pts = [prevPrevSeg.points[2], prevPrevSeg.points[0], s.points[1], s.points[2]]
+                            pts = [(pt.x, pt.y) for pt in pts]
+                            toTest.append(pts)
+            for pts in toTest:
+                if pts[0] != pts[1] and pts[2] != pts[3]: # And skip if the handles aren't extended
+                    segResults = checkCurveSegmentOverlap(*pts)
+                    for result in segResults:
+                        if not result in glyphResults:
+                            glyphResults.append(result)
+                
+            prevPrevSeg = prevSeg
+            prevSeg = s
+    glyphResults.sort()
+    return glyphResults
     
-def fixPointAlignment(g, pointData):
-    # Prepare new glyphs for the glyph rotation rules, and shift the points in the direction they'll be moving
-    # "nw" is the default, other directions are "ne", "sw", "se"
-    #extensions = [(".ne", (4, -4)), (".sw", (-4, 4)), (".se", (4, 4)), (None, (-4, -4))]
-    extensions = [(".ne", (1, -1)), (".sw", (-1, 1)), (".se", (1, 1)), (None, (-1, -1))]
-    # Make new glyphs
-    newGlyphs = []
-    font = g.font
-    for extension, offset in extensions:
-        if extension:
-            newGlyphName = g.name + extension
-            font.newGlyph(newGlyphName)
-            ng = font[newGlyphName]
-            ng.clear()
-            ng.appendGlyph(g)
-            ng.width = g.width
-            ng.lib[ZPOSITIONLIBKEY] = copy.deepcopy(g.lib[ZPOSITIONLIBKEY])
-            newGlyphs.append(ng)
-    # Find some minimum and maximums in the glyph "z" depth
-    zMin = None
-    zMax = None
-    for ident in pointData:
-        z = pointData[ident]["z"]
-        if not zMin:
-            zMin = z
-        elif z < zMin:
-            zMin = z
-        if not zMax:
-            zMax = z
-        elif z > zMax:
-            zMax = z
-    zRange = zMax-zMin
-    zMid = (zMax+zMin)*0.5
-    # Shift points
-    for cIdx, c in enumerate(g.contours):
-        for pIdx, pt in enumerate(c.points):
-            ident = getIdent(pt)
-            if ident in pointData:
-                z = pointData[ident]["z"]
-                f = (z-zMid)/zRange
-                for extension, offset in extensions:
-                    if extension:
-                        thisGlyphName = g.name + extension
-                    else: thisGlyphName = g.name
-                    # Move points
-                    thisGlyph = font[thisGlyphName]
-                    thisOffset = (f*offset[0], f*offset[1])
-                    thisPt = thisGlyph.contours[cIdx].points[pIdx]
-                    thisPt.moveBy(thisOffset)
-                    # Update lib data
-                    #ng.lib[ZPOSITIONLIBKEY][ident] = dict(
-                    #    x=pointData[ident]["x"]+offset[0], 
-                    #    y=pointData[ident]["y"]+offset[1], 
-                    #    z=pointData[ident]["z"])
-                    ng.changed()
-    return newGlyphs
-                
-                
-                
-
-
-
-def fixPointAlignmentOLD(g, pointData):
-    # Find any overlapping points that need to move
-    # Build new glyphs in the master font with nudged points
-    # Return info about the change so that it cna prepare rules
-    overlappingPts = {}
-    for cIdx, c in enumerate(g.contours):
-        for bPtIdx, bPt in enumerate(c.bPoints):
-            result = testPointAlignent(bPt, pointData)
-            if not result == False:
-                bPtToMove, angle = result
-                ident = getIdent(bPtToMove._point)
-                angle = math.degrees(angle)
-                if angle in [360, 180]:
-                    if not "h" in overlappingPts:
-                        overlappingPts["h"] = []
-                    overlappingPts["h"].append(ident)
-                elif angle in [270, 90]:
-                    if not "v" in overlappingPts:
-                        overlappingPts["v"] = []
-                    overlappingPts["v"].append(ident)
-                else:
-                    if not "hv" in overlappingPts:
-                        overlappingPts["hv"] = []
-                    overlappingPts["hv"].append(ident)
-    # "n", "w", and "nw" are the defaults when making glyphs
-    categories = []
-    idents = []
-    for category in overlappingPts.keys():
-        categories.append(category)
-        for i in overlappingPts[category]:
-            if not i in idents:
-                idents.append(i)
-    extensions = []
-    # @@@ For now, build all of the options if one is needed
-    if len(categories):
-        extensions += [(".ne", (4, -4)), (".sw", (-4, 4)), (".se", (4, 4)), (None, (-4, -4))] # Normal glyph is "nw" # flipped the sign on the y axis
-    # if "hv" in categories or "h" and "v" in categories:
-    #     extensions += [(".ne", (2, 2)), (".sw", (-2, -2)), (".se", (2, -2)), (None, (-2, 2))]
-    # if "h" in categories:
-    #     extensions += [(".e", (2, 0)), (None, (-2, 0))]
-    # if "v" in categories:
-    #     extensions += [(".s", (0, -2)), (None, (0, 2))]
-    # Make new glyphs
-    newGlyphs = []
-    font = g.font
-    for extension, offset in extensions:
-        if extension:
-            newGlyphName = g.name + extension
-            font.newGlyph(newGlyphName)
-            ng = font[newGlyphName]
-            ng.clear()
-            ng.appendGlyph(g)
-            ng.width = g.width
-            
-            libData = {}
-            for ident in pointData:
-                if ident in idents:
-                    libData[ident] = dict(
-                        x=pointData[ident]["x"]+offset[0], 
-                        y=pointData[ident]["y"]+offset[1], 
-                        z=pointData[ident]["z"])
-                else: libData[ident] = pointData[ident].copy()
-            ng.lib[ZPOSITIONLIBKEY] = libData#pointData.copy()
-            
-            newGlyphs.append(ng)
-        else:
-            # No extension, this is just the base glyph that needs to move
-            ng = g
-        # Move points
-        for c in ng.contours:
-            for bPt in c.bPoints:
-                thisIdent = getIdent(bPt._point)
-                if thisIdent in idents:
-                    bPt.moveBy(offset)
-        ng.changed()
-    # Done
-    return newGlyphs
-                        
-
-
+    
 
 """ Glyph Transformations """
     
 
-def rotateGlyphPointData(g, sourceInfo, pointData, angle=45, aLoc=None):# valueX=0, valueY=0, zDepthFactor=1):
-    # Turn the 1, 0, -1 into actual angles
-    valueX = AXISINFO["VROT"][sourceInfo["VROT"]]
-    valueY = AXISINFO["HROT"][sourceInfo["HROT"]]#sourceInfo["HROT"] * angle
-    #print(g.name, valueX, valueY)
+def rotateGlyphPointData(g, loc, pointData, angle=45, aLoc=None):
     
     # Rotation axis
     axisVectorX = Vector3(1, 0, 0)
@@ -295,40 +167,29 @@ def rotateGlyphPointData(g, sourceInfo, pointData, angle=45, aLoc=None):# valueX
             
             # Fetch the point data
             ident = getIdent(pt)
-            #if ident == None:
-            #    allNames = pointData.keys()
-            #    ident = getUniqueName(kind="waypoint", otherNames=allNames)
-            #    pt.name = ident
-            
-            #v = pointData[ident].copy()
+            # and make a vector object
             v = Vector3(pointData[ident]["x"], pointData[ident]["y"], pointData[ident]["z"])
-            #v = Vector3(pt.x, pt.y, pointData[ident]["z"])
         
-            # Invert the "z" position
+            # Invert the "z" position @@@ no longer necessary
             #v.z = -v.z
             #v.z = v.z * 0.5
             # Translate
             m = Matrix4.new_translate(-aLoc[0], -aLoc[1], -aLoc[2])
             v = m.transform(v)
             # Rotate X
-            m = m.new_rotate_axis(math.radians(valueX), axisVectorX)
+            m = m.new_rotate_axis(math.radians(loc["VROT"]), axisVectorX)
             v = m.transform(v)
             # Rotate Y
-            m = m.new_rotate_axis(math.radians(valueY), axisVectorY)
+            m = m.new_rotate_axis(math.radians(loc["HROT"]), axisVectorY)
             v = m.transform(v)
             # Translate
             m = Matrix4.new_translate(aLoc[0], aLoc[1], aLoc[2])
             v = m.transform(v)
             
-            # Move the point
-            #pt.x = v[0]
-            #pt.y = v[1]
-            #pt.z = v[2]
-            pointData[ident]["x"] = v.x#[0]
-            pointData[ident]["y"] = v.y#[1]
-            pointData[ident]["z"] = v.z#[2]
-            
-        #c.changed()
+            # Move the point in the pointData
+            pointData[ident]["x"] = v.x
+            pointData[ident]["y"] = v.y
+            pointData[ident]["z"] = v.z
         
     # Transform the margins
     # Rotate a point from (0, 0) and use the x offset for both margins
@@ -336,7 +197,7 @@ def rotateGlyphPointData(g, sourceInfo, pointData, angle=45, aLoc=None):# valueX
     m = Matrix4.new_translate(-aLoc[0], -aLoc[1], -aLoc[2])
     v = m.transform(v)
     # Rotate
-    m = m.new_rotate_axis(math.radians(valueY), axisVectorY)
+    m = m.new_rotate_axis(math.radians(loc["HROT"]), axisVectorY)
     v = m.transform(v)
     # Translate
     m = Matrix4.new_translate(aLoc[0], aLoc[1], aLoc[2])
@@ -356,7 +217,6 @@ def flattenShadow(g, pointData, shadowDirection="right", shadowLengthFactor=1):
     shadowLengthFactor = multiplier on top of the "z" depth for the length of the shadow
     """
     # Flatten out the "Z" axis as a shadow
-    #print(shadowAngle)
     for c in g.contours:
         for p in c.points:
             x = p.x
@@ -394,6 +254,10 @@ def outlineGlyph(g, offsetAmount, contrast=0, contrastAngle=0, alwaysConnect=Fal
 
 
 
+
+
+
+
 def buildDesignSpace(
         masterPath=None, 
         destPath=None, 
@@ -403,80 +267,106 @@ def buildDesignSpace(
         zOffset=None, 
         shadowLengthFactor=1,
         doForceSmooth=False,
-        overlappingCurveFix=False, #@@@
+        doMakeSubSources=False,
         familyName=None,
         alwaysConnect=False,
         styleName=None):
     
-    # Set up masters
+    # Set up folders
     basePath, masterFileName = os.path.split(masterPath)
     if destPath == None:
         destPath = os.path.join(basePath, "Rotated")
     # Make new folders for the destPath
     if not os.path.exists(destPath):
         os.makedirs(destPath)
-    
-    # DesignSpace Document
-    designSpace = DesignSpaceDocument()
-    designSpaceDocFilename = os.path.splitext(masterFileName)[0] + ".designspace"
-    designSpaceDocPath = os.path.join(destPath, designSpaceDocFilename)
-    
-    """ Source combinations and axis tags """
-    
-    # Collect axis tags and source info, based on the layout type
-    sourceCombinations = []
-    axisTags = []
 
-    if compositionType == "rotate and depth":
-        # Rotation, and "z" changes depth
-        for valueHROT in ["minimum", "default", "maximum"]:
-            for valueVROT in ["minimum", "default", "maximum"]:
-                for valueDPTH in ["minimum", "default"]:
-                    sourceCombinations.append(dict(HROT=valueHROT, VROT=valueVROT, DPTH=valueDPTH))
-    elif compositionType == "rotate and shadow":
-        # Rotation, and shadow length and angle
-        for valueHROT in ["minimum", "default", "maximum"]:
-            for valueVROT in ["minimum", "default", "maximum"]:
-                for valueSLEN in ["minimum", "default"]:
-                    for valueSANG in ["minimum", "maximum"]:
-                        sourceCombinations.append(dict(HROT=valueHROT, VROT=valueVROT, SLEN=valueSLEN, SANG=valueSANG))
-    else: # Normal rotation
-        for valueHROT in ["minimum", "default", "maximum"]:
-            for valueVROT in ["minimum", "default", "maximum"]:
-                sourceCombinations.append(dict(HROT=valueHROT, VROT=valueVROT))
-                
-    # AxisDescriptors
-    for tag in sourceCombinations[0].keys():
-        a = AxisDescriptor()
-        a.minimum = AXISINFO[tag]["minimum"]
-        a.maximum = AXISINFO[tag]["maximum"]
-        a.default = AXISINFO[tag]["default"]
-        a.name = AXISINFO[tag]["name"]
-        a.tag = tag
-        a.labelNames[u'en'] = AXISINFO[tag]["name"]
-        designSpace.addAxis(a)
-        
-    
-    """ Make the source UFOs and SourceDescriptors """
-        
+    # Open the master UFO
     masterFont = OpenFont(masterPath, showInterface=False)
+    
+    
+    """ Collect glyph data """
+    # Organize the point data out of the glyph lib
+    # and check to see which glyphs need to be present in a SubSource
+    glyphPointData = {}
+    needSubHROT = [] # Glyphs that need to be included in a SubSource when HROT is default
+    needSubVROT = []
+    for gName in glyphNames:
+        if gName in masterFont:
+            g = masterFont[gName]
+            pointData = readGlyphPointData(g)
+            glyphPointData[gName] = pointData
+            # Test for self-overlapping contours
+            if doMakeSubSources == True:
+                overlapResult = checkCurveOverlap(g)
+                if "x" in overlapResult:
+                    needSubHROT.append(gName)
+                elif "y" in overlapResult:
+                    needSubVROT.append(gName)
+    
+    """ Organize Source combinations """
+    
+    # Collect source info, based on the layout type
+    # Organize file names, designspace locations, glyph lists, etc.
+    sourceCombinations = []
+    for locHROT, tagHROT in [(-45, "HROTn"), (0, "HROTd"), (45, "HROTx")]:
+        for locVROT, tagVROT in [(-45, "VROTn"), (0, "VROTd"), (45, "VROTx")]:
+            if "shadow" in compositionType:
+                for locSLEN, tagSLEN in [(0, "SLENn"), (100, "SLENx")]:
+                    for locSANG, tagSANG in [(-45, "SANGn"), (45, "SANGx")]:
+                        # Rotate and Shadow
+                        fileName = "Source-%s_%s_%s_%s.ufo" % (tagHROT, tagVROT, tagSLEN, tagSANG)
+                        loc = dict(HROT=locHROT, VROT=locVROT, SLEN=locSLEN, SANG=locSANG)
+                        sourceInfo = dict(glyphNames=glyphNames, loc=loc, fileName=fileName, nudgeLoc=[0, 0])
+                        sourceCombinations.append(sourceInfo)
+            else: # Rotate only, skip the shadow axis data
+                fileName = "Source-%s_%s.ufo" % (tagHROT, tagVROT)
+                loc = dict(HROT=locHROT, VROT=locVROT)
+                sourceInfo = dict(glyphNames=glyphNames, loc=loc, fileName=fileName, nudgeLoc=[0, 0])
+                sourceCombinations.append(sourceInfo)
+    
+    # Process the sourceCombinations and make SubSources if necessary
+    print("needSubHROT", needSubHROT)
+    print("needSubVROT", needSubVROT)
+    doSubHROT = len(needSubHROT)
+    doSubVROT = len(needSubVROT)
+    # Loop through once to add new HROT SubSources
+    newSourceCombos = []
+    for sourceInfo in sourceCombinations:
+        if sourceInfo["loc"]["HROT"] == 0:
+            if doSubHROT:
+                subSourceInfo = copy.deepcopy(sourceInfo)
+                subSourceInfo["nudgeLoc"][0] = 0 # Don't nudge, move the location instead
+                subSourceInfo["loc"]["HROT"] += SLIGHTLYOFFAXIS
+                subSourceInfo["glyphNames"] = needSubHROT
+                subSourceInfo["fileName"] = "Sub" + subSourceInfo["fileName"].replace("HROTd", "HROTdd")
+                newSourceCombos.append(subSourceInfo)
+                # Nudge the default source
+                sourceInfo["nudgeLoc"][0] -= SLIGHTLYOFFAXIS
+    sourceCombinations += newSourceCombos
+    # Looping back through to add VROT SubSources and to catch all of the new HROT SubSources
+    newSourceCombos = []
+    for sourceInfo in sourceCombinations:
+        if sourceInfo["loc"]["VROT"] == 0:
+            if doSubVROT:
+                subSourceInfo = copy.deepcopy(sourceInfo)
+                subSourceInfo["nudgeLoc"][1] = 0 # Don't nudge, move the location instead
+                subSourceInfo["loc"]["VROT"] -= SLIGHTLYOFFAXIS
+                # Append the glyph list if this was the HROT=SLIGHTLYOFFAXIS
+                if not subSourceInfo["loc"]["HROT"] == SLIGHTLYOFFAXIS:
+                    subSourceInfo["glyphNames"] = []
+                subSourceInfo["glyphNames"] += needSubVROT
+                subSourceInfo["fileName"] = subSourceInfo["fileName"].replace("VROTd", "VROTdd")
+                if not "Sub" in subSourceInfo["fileName"]: subSourceInfo["fileName"] = "Sub" + subSourceInfo["fileName"]
+                newSourceCombos.append(subSourceInfo)
+                # Nudge the default source
+                sourceInfo["nudgeLoc"][1] += SLIGHTLYOFFAXIS
+    sourceCombinations += newSourceCombos
+    
+    
+    """ Make the source UFOs """
         
     for sourceInfo in sourceCombinations:
-        # Build a filename
-        fileNamePieces = []
-        for tag in AXISORDER:
-            if tag in sourceInfo:
-                comboName = sourceInfo[tag]
-                if comboName == "minimum":
-                    comboName = tag + "n"
-                elif comboName == "maximum":
-                    comboName = tag + "x"
-                else: comboName = tag + "d"
-                fileNamePieces.append(comboName)
-        tagName = "_".join(fileNamePieces)
-        fileName = "Source-%s.ufo" % tagName
-        sourceUfoPath = os.path.join(destPath, fileName)
-        sourceInfo["fileName"] = fileName
+        sourceUfoPath = os.path.join(destPath, sourceInfo["fileName"])
         if not os.path.exists(sourceUfoPath):
             sourceFont = NewFont(showInterface=False)
             sourceFont.save(sourceUfoPath)
@@ -486,100 +376,51 @@ def buildDesignSpace(
             sourceFont.close()
     
 
-    """ Process Glyphs """
+    """ Process Glyphs into Source UFOs """
     
-    # Collect all of the point data out of the lib
-    glyphPointData = {}
-    for gName in glyphNames:
-        if gName in masterFont:
-            g = masterFont[gName]
-            pointData = readGlyphPointData(g)
-            glyphPointData[gName] = pointData
-        
-    # A container for glyph names that need to follow a directional rule
-    # After all glyph processing, these will be turned into RuleDescriptors
-    # north and west are the defaults
-    ruleConditionCategories = {
-        #"n": [],
-        "s": [],
-        "e": [],
-        #"w": [],
-        "ne": [],
-        #"nw": [],
-        "se": [],
-        "sw": []}
-    
-    # Build new glyphs to get ready for the glyph swapping rules (only if we're outlining)
-    if overlappingCurveFix:
-        glyphNames = list(glyphPointData.keys())
-        for gName in glyphNames:
-            g = masterFont[gName]
-            pointData = glyphPointData[gName]#.copy()
-            # Make adjustments and copies of the glyph to fix overlaps
-            # Hold aside the new glyph names in the ruleConditionCategories containers
-            # ruleConditionGlyphs are tuples of (glyphObj, category)
-            # The actual glyph object "gDest" may also be changed, but not returned
-            # and the new glyph will have all of the proper point data in its lib
-            ruleConditionGlyphs = fixPointAlignment(g, pointData)
-            for ruleGlyph in ruleConditionGlyphs:
-                # Build new glyph point data for this glyph
-                glyphPointData[ruleGlyph.name] = {}
-                for c in ruleGlyph.contours:
-                    for pt in c.points:
-                        ident = getIdent(pt)
-                        glyphPointData[ruleGlyph.name][ident] = dict(x=pt.x, y=pt.y, z=glyphPointData[gName][ident]["z"])
-                # Organize these new glyphs into their categories
-                extensions = ruleConditionCategories.keys() # ["s", "e", "ne", "se", "sw"]
-                for extension in ruleConditionCategories.keys():
-                    if ruleGlyph.name.endswith("." + extension):
-                        ruleConditionCategories[extension].append((gName, ruleGlyph.name))
-
     # Process each UFO source, one at a time
     for sourceInfo in sourceCombinations:
+        
+        # Combine the nudgeLoc and loc, use this value when rotating
+        rotateLoc = copy.deepcopy(sourceInfo["loc"])
+        rotateLoc["HROT"] += sourceInfo["nudgeLoc"][0]
+        rotateLoc["VROT"] += sourceInfo["nudgeLoc"][1]
+        
         sourceUfoPath = os.path.join(destPath, sourceInfo["fileName"])
         sourceFont = OpenFont(sourceUfoPath, showInterface=False)
-        #print(sourceInfo["fileName"])
         
-        for gName in glyphPointData:
+        for gName in sourceInfo["glyphNames"]:
             pointData = copy.deepcopy(glyphPointData[gName])
-            
-            if "DPTH" in sourceInfo:
-                if sourceInfo["DPTH"] == "minimum":
-                    for ident in pointData:
-                        pointData[ident]["z"] = -pointData[ident]["z"]
         
             # Get the glyph started
             g = masterFont[gName]
-            if not gName in sourceFont:
-                sourceFont.newGlyph(gName)
+            # Remove the glyph if it already existed and make a new one
+            if gName in sourceFont:
+                for layer in sourceFont.layers:
+                    layer.removeGlyph(gName)
+            sourceFont.newGlyph(gName)
             gDest = sourceFont[gName]
-            gDest.clear()
             gDest.appendGlyph(g)
             gDest.width = g.width
             
-            # Offset the z axis, if we're adding a shadow
-            # @@@ Not doing this any longer
-            #if "SANG" in sourceInfo.keys():
-            #    for ident in pointData:
-            #        pointData[ident]["z"] += 200
+            # Shift the "z" value by an offset
             if zOffset:
                 for ident in pointData:
                     pointData[ident]["z"] += zOffset
         
             # Extend the shadow
             if "SANG" in sourceInfo.keys():
-                # pointData = copy.deepcopy(pointData) # @@@ Need to do this?
                 if sourceInfo["SANG"] == "minimum":
                     shadowDirection = "left"
                 else: shadowDirection = "right"
                 if sourceInfo["SLEN"] == "minimum":
                     finalShadowLengthFactor = 0
                 else: finalShadowLengthFactor = shadowLengthFactor
-                #pointData = flattenShadow(gDest, pointData, shadowDirection, shadowLengthFactor * 2)
                 pointData = flattenShadow(gDest, pointData, shadowDirection, finalShadowLengthFactor)
         
             # Rotate the glyph
-            pointData = rotateGlyphPointData(gDest, sourceInfo, pointData)
+            # Merge the location and the nudgeLoc, if there is one
+            pointData = rotateGlyphPointData(gDest, rotateLoc, pointData)
             
             # Move the points
             for c in gDest.contours:
@@ -590,7 +431,6 @@ def buildDesignSpace(
                         pt.y = pointData[ident]["y"]
             
             if doForceSmooth:
-                print("forceSmooth")
                 # If a bPoint was a smooth curve point in the original glyph,
                 # force the related bPoint in the rotated glyph to be smooth
                 for cIdx, c in enumerate(gDest.contours):
@@ -598,35 +438,37 @@ def buildDesignSpace(
                         sourceBPt = g.contours[cIdx].bPoints[bptIdx]
                         if sourceBPt.type == "curve":
                             forceSmooth(thisBPt)
-
         
             # Outline the glyph
             if outlineAmount:
-                # @@@ Commenting out for now, doesn't look good
-                # # Add contrast if it's the shadow
-                # contrast = 0
-                # contrastAngle = 0
-                # if "SANG" in sourceInfo.keys():
-                #     if not sourceInfo["SLEN"] == "minimum":
-                #         contrast = outlineAmount * 2
-                #         if sourceInfo["SANG"] == "minimum":
-                #             contrastAngle = -45
-                #         elif sourceInfo["SANG"] == "minimum":
-                #             contrastAngle = 45
-                # Outline
                 outlineGlyph(gDest, outlineAmount, alwaysConnect=alwaysConnect)
-                # @@@ and use contrast if its' a shaodw
         
             # Update
             gDest.changed()
         
-        # @@@ After outlining, move overlapping points back
-        # @@@ Might be difficult because now they've also rotated?
-        # @@@ This way I can move the points even futher before outlining, which would result in better outlines
-        
         # Done, save
         sourceFont.changed()
         sourceFont.save()
+        
+ 
+    """ New DesignSpaceDocument """
+        
+    designSpace = DesignSpaceDocument()
+    designSpaceDocFilename = os.path.splitext(masterFileName)[0] + ".designspace"
+    designSpaceDocPath = os.path.join(destPath, designSpaceDocFilename)
+    
+
+    """ Axis Descriptors """
+        
+    for tag in sourceCombinations[0]["loc"].keys():
+        a = AxisDescriptor()
+        a.minimum = AXISINFO[tag]["minimum"]
+        a.maximum = AXISINFO[tag]["maximum"]
+        a.default = AXISINFO[tag]["default"]
+        a.name = AXISINFO[tag]["name"]
+        a.tag = tag
+        a.labelNames[u'en'] = AXISINFO[tag]["name"]
+        designSpace.addAxis(a)
 
 
     """ Source Descriptors """
@@ -643,59 +485,29 @@ def buildDesignSpace(
         s.copyFeatures = True
         s.familyName = masterFont.info.familyName
         s.styleName = s.name
+        # Convert the loc from tags to names
         loc = {}
-        for tag, value in sourceInfo.items():
-            if not tag in ["fileName"]: # @@@ A little sloppy to do this
-                if tag in AXISINFO:
-                    axisName = AXISINFO[tag]["name"]
-                    loc[axisName] = AXISINFO[tag][value]
-                    # if value == "n":
-                    #     loc[axisName] = AXISINFO[tag]["minimum"]
-                    # elif value == "x":
-                    #     loc[axisName] = AXISINFO[tag]["maximum"]
-                    # else: # default
-                    #     loc[axisName] = AXISINFO[tag]["default"]
+        for tag, value in sourceInfo["loc"].items():
+            axisName = AXISINFO[tag]["name"]
+            loc[axisName] = value
         s.location = loc
         designSpace.addSource(s)
     
     
-    """ Rule Descriptors """
-    
-    # Make the RuleDescriptors based on the ruleConditionCategories data
-    HROTNAME = AXISINFO["HROT"]["name"]
-    VROTNAME = AXISINFO["VROT"]["name"]
-    for categoryName, ruleGlyphPairs in ruleConditionCategories.items():
-        if len(ruleGlyphPairs):
-            rd = RuleDescriptor()
-            rd.name = categoryName
-            conditions = []
-            if categoryName == "n":
-                conditions = [dict(name=VROTNAME, minimum=0, maximum=45)]
-            elif categoryName == "s":
-                conditions = [dict(name=VROTNAME, minimum=-45, maximum=0)]
-            elif categoryName == "e":
-                conditions = [dict(name=HROTNAME, minimum=0, maximum=45)]
-            elif categoryName == "w":
-                conditions = [dict(name=HROTNAME, minimum=-45, maximum=0)]
-            elif categoryName == "ne":
-                conditions = [dict(name=VROTNAME, minimum=0, maximum=45), dict(name=HROTNAME, minimum=0, maximum=45)]
-            elif categoryName == "nw":
-                conditions = [dict(name=VROTNAME, minimum=0, maximum=45), dict(name=HROTNAME, minimum=-45, maximum=0)]
-            elif categoryName == "se":
-                conditions = [dict(name=VROTNAME, minimum=-45, maximum=0), dict(name=HROTNAME, minimum=0, maximum=45)]
-            elif categoryName == "sw":
-                conditions = [dict(name=VROTNAME, minimum=-45, maximum=0), dict(name=HROTNAME, minimum=-45, maximum=0)]
-            rd.conditionSets.append(conditions)
-            for pair in ruleGlyphPairs:
-                rd.subs.append(pair)
-            designSpace.addRule(rd)
-    
-    
-    
-    # @@@ Ready to
-    # @@@ - Build the font
-
 
     designSpace.write(designSpaceDocPath)
     
+
+
+# TEST
+buildDesignSpace(
+    masterPath="/Users/clymer/Documents/Code/Git repos/Bitbucket/tilt-typeface/sources/Tilt Neon/Masters/Tilt-Neon_D3.ufo", 
+    destPath="/Users/clymer/Documents/Code/Git repos/Bitbucket/tilt-typeface/sources/Tilt Neon/Rotated-Testing", 
+    glyphNames=[n for n in "ADEHINORSUaehilnopst"]+["period", "zero", "one", "two", "three"],
+    compositionType="rotate", 
+    outlineAmount=50, 
+    doForceSmooth=True,
+    doMakeSubSources=True,
+    familyName="Tilt Neon",
+    styleName="Regular")
     
