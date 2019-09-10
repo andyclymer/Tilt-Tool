@@ -203,8 +203,10 @@ def rotateGlyphPointData(g, loc, pointData, angle=45, aLoc=None):
     m = Matrix4.new_translate(aLoc[0], aLoc[1], aLoc[2])
     v = m.transform(v)
     # The "y" value is the LSB and RSB offset
-    g.leftMargin -= v[0]
-    g.rightMargin -= v[0]
+    try:
+        g.leftMargin -= v[0]
+        g.rightMargin -= v[0]
+    except: pass
     
     return pointData
 
@@ -327,6 +329,9 @@ def buildDesignSpace(
     # Process the sourceCombinations and make SubSources if necessary
     print("needSubHROT", needSubHROT)
     print("needSubVROT", needSubVROT)
+    # @@@ Temporarily force all glyphs to be in all submasters
+    needSubHROT = glyphNames
+    needSubVROT = glyphNames
     doSubHROT = len(needSubHROT)
     doSubVROT = len(needSubVROT)
     # Loop through once to add new HROT SubSources
@@ -496,18 +501,4 @@ def buildDesignSpace(
     
 
     designSpace.write(designSpaceDocPath)
-    
-
-
-# TEST
-buildDesignSpace(
-    masterPath="/Users/clymer/Documents/Code/Git repos/Bitbucket/tilt-typeface/sources/Tilt Neon/Masters/Tilt-Neon_D3.ufo", 
-    destPath="/Users/clymer/Documents/Code/Git repos/Bitbucket/tilt-typeface/sources/Tilt Neon/Rotated-Testing", 
-    glyphNames=[n for n in "ADEHINORSUaehilnopst"]+["period", "zero", "one", "two", "three"],
-    compositionType="rotate", 
-    outlineAmount=50, 
-    doForceSmooth=True,
-    doMakeSubSources=True,
-    familyName="Tilt Neon",
-    styleName="Regular")
     
