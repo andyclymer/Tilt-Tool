@@ -7,7 +7,7 @@ buildDesignSpace(
     compositionType="rotate and shadow", 
     outlineAmount=0, 
     doForceSmooth=False,
-    overlappingCurveFix=False,
+    doMakeSubSources=False,
     familyName="Tilt Warp Shadow",
     styleName="Regular")
     

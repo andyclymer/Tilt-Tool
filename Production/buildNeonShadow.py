@@ -8,6 +8,6 @@ buildDesignSpace(
     outlineAmount=50, 
     doForceSmooth=True,
     doMakeSubSources=True,
-    familyName="Tilt Neon",
+    familyName="Tilt Neon Shadow",
     styleName="Regular")
     

@@ -332,8 +332,12 @@ def buildDesignSpace(
     # @@@ Temporarily force all glyphs to be in all submasters
     needSubHROT = glyphNames
     needSubVROT = glyphNames
-    doSubHROT = len(needSubHROT)
-    doSubVROT = len(needSubVROT)
+    if doMakeSubSources:
+        doSubHROT = len(needSubHROT)
+        doSubVROT = len(needSubVROT)
+    else:
+        doSubHROT = False
+        doSubVROT = False
     # Loop through once to add new HROT SubSources
     newSourceCombos = []
     for sourceInfo in sourceCombinations:
