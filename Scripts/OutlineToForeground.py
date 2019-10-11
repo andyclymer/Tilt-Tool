@@ -1,7 +1,7 @@
 
 from outlineFitterPen import OutlineFitterPen, MathPoint
 
-offsetAmount = 55
+offsetAmount = 50
 
 g = CurrentGlyph()
 gm = g.getLayer("model")
@@ -12,7 +12,7 @@ gl.prepareUndo("Outline")
 gl.clear()
 gl.appendGlyph(gm)
 
-pen = OutlineFitterPen(None, offsetAmount, connection="Round", cap="Round", closeOpenPaths=True, alwaysConnect=True) 
+pen = OutlineFitterPen(None, offsetAmount, connection="Round", cap="Round", closeOpenPaths=True, alwaysConnect=False) 
 gl.draw(pen)
 gl.clear()
 pen.drawSettings(drawOriginal=False, drawInner=True, drawOuter=True)
