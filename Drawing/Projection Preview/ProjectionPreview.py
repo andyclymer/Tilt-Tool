@@ -39,7 +39,7 @@ class ProjectionPreviewWindow:
         x = 110
         self.w.zoomScale = vanilla.EditText((x, 10, 40, 25), "0.5")
         self.w.zoomLabel = vanilla.TextBox((x+50, 15, 50, 25), "Zoom", sizeStyle="small")
-        self.w.strokeWidth = vanilla.EditText((x, 40, 40, 25), "70")
+        self.w.strokeWidth = vanilla.EditText((x, 40, 40, 25), "90")
         self.w.doStrokeBox = vanilla.CheckBox((x+50, 40, 100, 25), "Stroke", sizeStyle="small", value=True)
         
         # Web view
