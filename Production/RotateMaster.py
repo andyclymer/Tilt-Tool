@@ -167,29 +167,31 @@ def rotateGlyphPointData(g, loc, pointData, angle=45, aLoc=None):
             
             # Fetch the point data
             ident = getIdent(pt)
-            # and make a vector object
-            v = Vector3(pointData[ident]["x"], pointData[ident]["y"], pointData[ident]["z"])
-        
-            # Invert the "z" position @@@ no longer necessary
-            #v.z = -v.z
-            #v.z = v.z * 0.5
-            # Translate
-            m = Matrix4.new_translate(-aLoc[0], -aLoc[1], -aLoc[2])
-            v = m.transform(v)
-            # Rotate X
-            m = m.new_rotate_axis(math.radians(loc["VROT"]), axisVectorX)
-            v = m.transform(v)
-            # Rotate Y
-            m = m.new_rotate_axis(math.radians(loc["HROT"]), axisVectorY)
-            v = m.transform(v)
-            # Translate
-            m = Matrix4.new_translate(aLoc[0], aLoc[1], aLoc[2])
-            v = m.transform(v)
             
-            # Move the point in the pointData
-            pointData[ident]["x"] = v.x
-            pointData[ident]["y"] = v.y
-            pointData[ident]["z"] = v.z
+            if ident in pointData:
+                # and make a vector object
+                v = Vector3(pointData[ident]["x"], pointData[ident]["y"], pointData[ident]["z"])
+        
+                # Invert the "z" position @@@ no longer necessary
+                #v.z = -v.z
+                #v.z = v.z * 0.5
+                # Translate
+                m = Matrix4.new_translate(-aLoc[0], -aLoc[1], -aLoc[2])
+                v = m.transform(v)
+                # Rotate X
+                m = m.new_rotate_axis(math.radians(loc["VROT"]), axisVectorX)
+                v = m.transform(v)
+                # Rotate Y
+                m = m.new_rotate_axis(math.radians(loc["HROT"]), axisVectorY)
+                v = m.transform(v)
+                # Translate
+                m = Matrix4.new_translate(aLoc[0], aLoc[1], aLoc[2])
+                v = m.transform(v)
+            
+                # Move the point in the pointData
+                pointData[ident]["x"] = v.x
+                pointData[ident]["y"] = v.y
+                pointData[ident]["z"] = v.z
         
     # Transform the margins
     # Rotate a point from (0, 0) and use the x offset for both margins
@@ -239,7 +241,7 @@ def flattenShadow(g, pointData, shadowDirection="right", shadowLengthFactor=1):
     return pointData
 
 
-def outlineGlyph(g, offsetAmount, contrast=0, contrastAngle=0, alwaysConnect=False):
+def outlineGlyph(f, g, offsetAmount, contrast=0, contrastAngle=0, alwaysConnect=False):
     """
     Outline a glyph
     """
@@ -247,7 +249,7 @@ def outlineGlyph(g, offsetAmount, contrast=0, contrastAngle=0, alwaysConnect=Fal
     gl = g.getLayer("background")
     gl.appendGlyph(g)
     # Outline
-    pen = OutlineFitterPen(None, offsetAmount, connection="Round", cap="Roundsimple", closeOpenPaths=True, alwaysConnect=alwaysConnect, contrast=contrast, contrastAngle=contrastAngle) 
+    pen = OutlineFitterPen(f, offsetAmount, connection="Round", cap="Roundsimple", closeOpenPaths=True, alwaysConnect=alwaysConnect, contrast=contrast, contrastAngle=contrastAngle) 
     g.draw(pen)
     g.clear()
     pen.drawSettings(drawOriginal=False, drawInner=True, drawOuter=True)
@@ -285,6 +287,10 @@ def buildDesignSpace(
     # Open the master UFO
     masterFont = OpenFont(masterPath, showInterface=False)
     
+    # Use all glyphs, if no names are called for
+    if glyphNames == []:
+        glyphNames = list(masterFont.keys())
+        glyphNames.sort()
     
     """ Collect glyph data """
     # Organize the point data out of the glyph lib
@@ -406,11 +412,25 @@ def buildDesignSpace(
             # Remove the glyph if it already existed and make a new one
             if gName in sourceFont:
                 for layer in sourceFont.layers:
-                    layer.removeGlyph(gName)
+                    if gName in layer:
+                        layer.removeGlyph(gName)
             sourceFont.newGlyph(gName)
             gDest = sourceFont[gName]
             gDest.appendGlyph(g)
             gDest.width = g.width
+            gDest.unicode = g.unicode
+            
+            # Decompose
+            """ # @@@ Leaving this out for now, decomposed contours lose their point IDs
+            for c in gDest.components:
+                baseName = c.baseGlyph
+                c.decompose()
+                # ...and copy over point data
+                #baseGlyph = masterFont[baseName]
+                basePointData = copy.deepcopy(glyphPointData[baseName])
+                for ident in basePointData:
+                    pointData[ident] = basePointData[ident]
+            """
             
             # Shift the "z" value by an offset
             if zOffset:
@@ -450,8 +470,7 @@ def buildDesignSpace(
         
             # Outline the glyph
             if outlineAmount:
-                outlineGlyph(gDest, outlineAmount, alwaysConnect=alwaysConnect)
-        
+                outlineGlyph(sourceFont, gDest, outlineAmount, alwaysConnect=alwaysConnect)
             # Update
             gDest.changed()
         

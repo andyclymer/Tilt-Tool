@@ -1,9 +1,9 @@
 from RotateMaster import buildDesignSpace
 
 buildDesignSpace(
-    masterPath="/Users/clymer/Documents/Code/Git repos/GitHub/andyclymer/Tilt-Typeface/sources/Tilt Monument/Masters/Tilt-Monument.ufo", 
-    destPath="/Users/clymer/Documents/Code/Git repos/Bitbucket/tilt-typeface/sources/Tilt Monument/Rotated", 
-    glyphNames=[n for n in "ADEFGHILNORSTUVhios"]+["period", "zero", "one", "one.alt", "three", "eight", "quoteleft", "quoteright"],
+    masterPath="/Users/clymer/Documents/Code/Git repos/GitHub/andyclymer/Tilt-Typeface/sources/Tilt Monument/Masters/Tilt-Monument-SmallTest.ufo", 
+    destPath="/Users/clymer/Documents/Code/Git repos/GitHub/andyclymer/Tilt-Typeface/sources/Tilt Monument/Rotated Test", 
+    glyphNames=[],
     compositionType="rotate", 
     outlineAmount=10, 
     doForceSmooth=True,
