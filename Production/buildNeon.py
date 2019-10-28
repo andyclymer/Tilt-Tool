@@ -1,11 +1,12 @@
 from RotateMaster import buildDesignSpace
 
 buildDesignSpace(
-    masterPath="/Users/clymer/Documents/Code/Git repos/Bitbucket/tilt-typeface/sources/Tilt Neon/Masters/Tilt-Neon_D3.ufo", 
-    destPath="/Users/clymer/Documents/Code/Git repos/Bitbucket/tilt-typeface/sources/Tilt Neon/Rotated", 
-    glyphNames=[n for n in "ADEGHINORSUaehilnopst"]+["period"],
+    masterPath="/Users/clymer/Documents/Code/Git repos/GitHub/andyclymer/Tilt-Typeface/sources/Tilt Neon/Masters/Tilt-Neon.ufo", 
+    destPath="/Users/clymer/Documents/Code/Git repos/GitHub/andyclymer/Tilt-Typeface/sources/Tilt Neon/Rotated", 
+    #glyphNames=[n for n in "HODRanos"] + ["period", "comma"],
+    glyphNames=[n for n in "Oos"],
     compositionType="rotate", 
-    outlineAmount=50, 
+    outlineAmount=45, 
     doForceSmooth=True,
     doMakeSubSources=True,
     familyName="Tilt Neon",
