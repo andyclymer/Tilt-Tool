@@ -338,12 +338,13 @@ class PreviewWindow(object):
         value = sender.value
         if self.ds:
             cg = CurrentGlyph()
+            cg.prepareUndo("Move handles")
             if not cg == None:
                for cIdx, c in enumerate(cg.contours):
                     for ptIdx, bPt in enumerate(c.bPoints):
                         if bPt.selected:
                             scaleMagnitude(bPt, value)
-
+            cg.performUndo()
     
     
 PreviewWindow()
