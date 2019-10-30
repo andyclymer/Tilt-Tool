@@ -192,7 +192,7 @@ def rotateGlyphPointData(g, loc, pointData, angle=45, aLoc=None):
                 pointData[ident]["x"] = v.x
                 pointData[ident]["y"] = v.y
                 pointData[ident]["z"] = v.z
-        
+                
     # Transform the margins
     # Rotate a point from (0, 0) and use the x offset for both margins
     v = Vector3(0, 0, 0)
@@ -205,12 +205,9 @@ def rotateGlyphPointData(g, loc, pointData, angle=45, aLoc=None):
     m = Matrix4.new_translate(aLoc[0], aLoc[1], aLoc[2])
     v = m.transform(v)
     # The "y" value is the LSB and RSB offset
-    try:
-        g.leftMargin -= v[0]
-        g.rightMargin -= v[0]
-    except: pass
-    
-    return pointData
+    marginChange = int(round(v[0]))
+                
+    return marginChange, pointData
 
 
 
@@ -449,7 +446,7 @@ def buildDesignSpace(
         
             # Rotate the glyph
             # Merge the location and the nudgeLoc, if there is one
-            pointData = rotateGlyphPointData(gDest, rotateLoc, pointData)
+            marginChange, pointData = rotateGlyphPointData(gDest, rotateLoc, pointData)
             
             # Move the points
             for c in gDest.contours:
@@ -458,6 +455,10 @@ def buildDesignSpace(
                     if ident in pointData:
                         pt.x = pointData[ident]["x"]
                         pt.y = pointData[ident]["y"]
+            
+            # Shift the glyph
+            gDest.moveBy((-marginChange, 0))
+            gDest.width -= marginChange * 2
             
             if doForceSmooth:
                 # If a bPoint was a smooth curve point in the original glyph,
