@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>addToMenu</key>
+	<array>
+		<dict>
+			<key>path</key>
+			<string>ProjectionViewControl.py</string>
+			<key>preferredName</key>
+			<string>Enable Projection View Control</string>
+			<key>shortKey</key>
+			<string></string>
+		</dict>
+		<dict>
+			<key>path</key>
+			<string>ProjectionPreview.py</string>
+			<key>preferredName</key>
+			<string>Projection Preview...</string>
+			<key>shortKey</key>
+			<string></string>
+		</dict>
+		<dict>
+			<key>path</key>
+			<string>GlyphPreview.py</string>
+			<key>preferredName</key>
+			<string>Glyph Preview...</string>
+			<key>shortKey</key>
+			<string></string>
+		</dict>
+	</array>
+	<key>developer</key>
+	<string>Andy Clymer</string>
+	<key>developerURL</key>
+	<string>http://www.andyclymer.com/</string>
+	<key>html</key>
+	<false/>
+	<key>launchAtStartUp</key>
+	<false/>
+	<key>mainScript</key>
+	<string>ProjectionViewControl.py</string>
+	<key>name</key>
+	<string>Tilt Tool</string>
+	<key>requiresVersionMajor</key>
+	<string>3</string>
+	<key>requiresVersionMinor</key>
+	<string>3</string>
+	<key>timeStamp</key>
+	<real>1572549812.544699</real>
+	<key>version</key>
+	<string>0.1</string>
+</dict>
+</plist>
