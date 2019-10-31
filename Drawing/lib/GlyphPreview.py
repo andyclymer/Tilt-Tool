@@ -19,7 +19,7 @@ def measureBCPs(bPt):
     return (vBcpIn.magnitude(), vBcpOut.magnitude())
 
     
-def shiftBPoint(bPt, targetMeasurements=(1, 1), roundPoints=True):
+def shiftBPoint(bPt, targetMeasurements=(1, 1), roundPoints=True, moveAnchor=True):
     # Shift the BCPs, and then the entire bPoint, to get the handles to match the ratio of targetMeasurements
     vBcpIn = Vector3(*bPt.bcpIn)
     vBcpOut = Vector3(*bPt.bcpOut)
@@ -38,8 +38,9 @@ def shiftBPoint(bPt, targetMeasurements=(1, 1), roundPoints=True):
     bPt.bcpIn = (vBcpInNew[0], vBcpInNew[1])
     bPt.bcpOut = (vBcpOutNew[0], vBcpOutNew[1])
     # Shift the entire BCP to spread the movement between the BCPs
-    bcpMoved = (vBcpInNew - vBcpIn) * -0.5
-    bPt.moveBy((bcpMoved[0], bcpMoved[1]))
+    if moveAnchor:
+        bcpMoved = (vBcpInNew - vBcpIn) * -0.5
+        bPt.moveBy((bcpMoved[0], bcpMoved[1]))
     if roundPoints:
         bPt.round()
         
@@ -118,13 +119,16 @@ class PreviewWindow(object):
         
         mid = 370
         self.w.setRatioButton = vanilla.SquareButton((mid, step, 120, 25), "Set Point Ratio", sizeStyle="small", callback=self.setPointRatio)
-        self.w.magButton0 = vanilla.SquareButton((mid, step+35, 31, 25), "--", sizeStyle="small", callback=self.pointMagCallback)
+        self.w.setRatioButton.id = "ratio"
+        self.w.setRatioButton2 = vanilla.SquareButton((mid+119, step, 80, 25), "(Anchor)", sizeStyle="small", callback=self.setPointRatio)
+        self.w.setRatioButton2.id = "ratioLeaveAnchor"
+        self.w.magButton0 = vanilla.SquareButton((mid, step+35, 51, 25), "-20", sizeStyle="small", callback=self.pointMagCallback)
         self.w.magButton0.value = 0.8
-        self.w.magButton1 = vanilla.SquareButton((mid+30, step+35, 31, 25), "-", sizeStyle="small", callback=self.pointMagCallback)
+        self.w.magButton1 = vanilla.SquareButton((mid+50, step+35, 51, 25), "-5", sizeStyle="small", callback=self.pointMagCallback)
         self.w.magButton1.value = 0.95
-        self.w.magButton2 = vanilla.SquareButton((mid+60, step+35, 31, 25), "+", sizeStyle="small", callback=self.pointMagCallback)
+        self.w.magButton2 = vanilla.SquareButton((mid+100, step+35, 51, 25), "+5", sizeStyle="small", callback=self.pointMagCallback)
         self.w.magButton2.value = 1.05
-        self.w.magButton3 = vanilla.SquareButton((mid+90, step+35, 31, 25), "++", sizeStyle="small", callback=self.pointMagCallback)
+        self.w.magButton3 = vanilla.SquareButton((mid+150, step+35, 50, 25), "+20", sizeStyle="small", callback=self.pointMagCallback)
         self.w.magButton3.value = 1.2
         #self.w.closeButton = vanilla.SquareButton((550, step+35, 40, 25), "Close", sizeStyle="small", callback=self.closeSourceWindows)
         
@@ -329,7 +333,10 @@ class PreviewWindow(object):
                         for ptIdx, bPt in enumerate(c.bPoints):
                             if bPt.selected:
                                 meas = measureBCPs(ng.contours[cIdx].bPoints[ptIdx])
-                                shiftBPoint(bPt, targetMeasurements=meas, roundPoints=True)
+                                if sender.id == "ratioLeaveAnchor":
+                                    moveAnchor = False
+                                else: moveAnchor = True
+                                shiftBPoint(bPt, targetMeasurements=meas, roundPoints=True, moveAnchor=moveAnchor)
                     cg.changed()
                     cg.performUndo()
     
