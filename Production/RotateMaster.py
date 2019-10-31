@@ -474,6 +474,9 @@ def buildDesignSpace(
                 outlineGlyph(sourceFont, gDest, outlineAmount, alwaysConnect=alwaysConnect)
             # Update
             gDest.changed()
+            
+        # Resort the font
+        sourceFont.glyphOrder = masterFont.glyphOrder
         
         # Done, save
         sourceFont.changed()
