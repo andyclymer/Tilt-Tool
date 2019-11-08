@@ -30,7 +30,7 @@ class ProjectionViewControl(BaseRoboHUDControl):
     def start(self):
         super(ProjectionViewControl, self).start()
         
-        self.debug = False
+        self.debug = True
         
         # Glyph and font data
         self.glyph = None
@@ -53,8 +53,7 @@ class ProjectionViewControl(BaseRoboHUDControl):
         self.view.controlGroup.buttonTop.enable(False)
         self.view.controlGroup.enableBox = vanilla.CheckBox((13, -38, 25, 25), "", callback=self.enableDisableCallback)
         
-        addObserver(self, "glyphWillChange", "viewWillChangeGlyph")
-        addObserver(self, "glyphDidChange", "viewDidChangeGlyph")
+        addObserver(self, "currentGlyphChanged", "currentGlyphChanged")
         addObserver(self, "fontWillSave", "glyphWindowWillClose")
         addObserver(self, "fontWillSave", "fontWillSave")
         addObserver(self, "fontDidSave", "fontDidSave")
@@ -62,8 +61,7 @@ class ProjectionViewControl(BaseRoboHUDControl):
 
     def stop(self):
         super(ProjectionViewControl, self).stop()
-        removeObserver(self, "viewWillChangeGlyph")
-        removeObserver(self, "viewDidChangeGlyph")
+        removeObserver(self, "currentGlyphChanged")
         removeObserver(self, "glyphWindowWillClose")
         removeObserver(self, "fontWillSave")
         removeObserver(self, "fontDidSave")
@@ -113,42 +111,10 @@ class ProjectionViewControl(BaseRoboHUDControl):
     
     def fontDidSave(self, info):
         # Rotate back to previous rotation after saving
-        # @@@ Is this working?
         if not self.glyph == None:
             self.rotate(self.currentView)
     
-    def glyphWillChange(self, info):
-        if self.debug: print("glyphWillChange", info["glyph"])
-        # If there was already a glyph, remove the observer, rotate to the front and save
-        if not self.glyph == None:
-            self.glyph.removeObserver(self, "Glyph.Changed")
-            self.rotate("front")
-            self.libWriteGlyph()
-        self.glyph = None
-        self.pointData = {}
-        # Disable the projection view, until the new glyph enables it
-        self.view.controlGroup.enableBox.set(0)
-        self.enableProjection = False
-        self.updateButtons()
-    
-    def glyphDidChange(self, info):
-        if self.debug: print("glyphDidChange", info["glyph"])
-        # If there is a new glyph, get set up and read lib data
-        self.glyph = info["glyph"]
-        if not self.glyph == None:
-            self.glyph.addObserver(self, "glyphDataChanged", "Glyph.Changed")
-            self.libReadGlyph()
-            # If there is pointData, enable projection editing
-            if len(self.pointData.keys()) > 0:
-                self.view.controlGroup.enableBox.set(1)
-                self.enableProjection = True
-                self.updateButtons()
-                
-    
     def currentGlyphChanged(self, info):
-        """
-        @@@ OLD, UNUSED
-        """
         # @@@ Problem?
         # @@@ When the window closes and reopens, the currentGlyph is still the same because it's selected in the font window
         # @@@ ...and the lib data doesn't properly read/write?

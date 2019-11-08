@@ -3,7 +3,7 @@ from mojo.events import addObserver, removeObserver
 import vanilla
 import math
 import random
-
+import copy
 
 
 def makeUniqueName(length=None):
@@ -53,7 +53,8 @@ class ProjectionViewControl(BaseRoboHUDControl):
         self.view.controlGroup.buttonTop.enable(False)
         self.view.controlGroup.enableBox = vanilla.CheckBox((13, -38, 25, 25), "", callback=self.enableDisableCallback)
         
-        addObserver(self, "currentGlyphChanged", "currentGlyphChanged")
+        addObserver(self, "glyphWillChange", "viewWillChangeGlyph")
+        addObserver(self, "glyphDidChange", "viewDidChangeGlyph")
         addObserver(self, "fontWillSave", "glyphWindowWillClose")
         addObserver(self, "fontWillSave", "fontWillSave")
         addObserver(self, "fontDidSave", "fontDidSave")
@@ -61,7 +62,8 @@ class ProjectionViewControl(BaseRoboHUDControl):
 
     def stop(self):
         super(ProjectionViewControl, self).stop()
-        removeObserver(self, "currentGlyphChanged")
+        removeObserver(self, "viewWillChangeGlyph")
+        removeObserver(self, "viewDidChangeGlyph")
         removeObserver(self, "glyphWindowWillClose")
         removeObserver(self, "fontWillSave")
         removeObserver(self, "fontDidSave")
@@ -75,6 +77,7 @@ class ProjectionViewControl(BaseRoboHUDControl):
         # Enable/disable the projection view
         # When disabled, rotate back to the front and stop reading/writing lib data
         self.enableProjection = self.view.controlGroup.enableBox.get()
+        self._updateXYZPointData() # If enabling, need to get the point data
         self.rotate("front")
         self.updateButtons()
     
@@ -110,10 +113,47 @@ class ProjectionViewControl(BaseRoboHUDControl):
     
     def fontDidSave(self, info):
         # Rotate back to previous rotation after saving
+        # @@@ Is this working?
         if not self.glyph == None:
             self.rotate(self.currentView)
     
+    def glyphWillChange(self, info):
+        if self.debug: print("glyphWillChange", info["glyph"])
+        # If there was already a glyph, remove the observer, rotate to the front and save
+        if not self.glyph == None:
+            self.glyph.removeObserver(self, "Glyph.Changed")
+            self.rotate("front")
+            self.libWriteGlyph()
+        self.glyph = None
+        self.pointData = {}
+        # Disable the projection view, until the new glyph enables it
+        self.view.controlGroup.enableBox.set(0)
+        self.enableProjection = False
+        self.updateButtons()
+    
+    def glyphDidChange(self, info):
+        if self.debug: print("glyphDidChange", info["glyph"])
+        # If there is a new glyph, get set up and read lib data
+        self.glyph = info["glyph"]
+        if not self.glyph == None:
+            self.glyph.addObserver(self, "glyphDataChanged", "Glyph.Changed")
+            self.libReadGlyph()
+            # If there is pointData, enable projection editing
+            if len(self.pointData.keys()) > 0:
+                self.view.controlGroup.enableBox.set(1)
+                self.enableProjection = True
+                self.updateButtons()
+                
+    
     def currentGlyphChanged(self, info):
+        """
+        @@@ OLD, UNUSED
+        """
+        # @@@ Problem?
+        # @@@ When the window closes and reopens, the currentGlyph is still the same because it's selected in the font window
+        # @@@ ...and the lib data doesn't properly read/write?
+        # @@@ I think I need to redo this for viewDidChangeGlyph / willChangeGlyph since I only want to track the view changing
+        if self.debug: print("currentGlyphChanged", info["glyph"])
         # Changed to a new glyph
         # If the glyph really did change...
         if not self.glyph == info["glyph"]:
@@ -140,7 +180,7 @@ class ProjectionViewControl(BaseRoboHUDControl):
                 #self.glyph.addObserver(self, "glyphWillUndo", "Glyph.BeginRedo")
                 #self.glyph.addObserver(self, "glyphDidUndo", "Glyph.EndRedo")
                 self.libReadGlyph()
-            if self.debug: print("currentGlyphChanged, pointData", self.pointData)
+            #if self.debug: print("currentGlyphChanged, pointData", self.pointData)
             # If there was no pointData, disable editing on this glyph
             if len(self.pointData.keys()) > 0:
                 self.view.controlGroup.enableBox.set(1)
@@ -148,7 +188,7 @@ class ProjectionViewControl(BaseRoboHUDControl):
             self.updateButtons()
     
     def _updateXYZPointData(self):
-        if self.debug: print("_updateXYZPointData")
+        if self.debug: print("_updateXYZPointData (glyph drawing changed)")
         # The glyph drawing changed, clean up the 3D point data
         if not self.glyph == None:
             if self.enableProjection:
@@ -218,7 +258,7 @@ class ProjectionViewControl(BaseRoboHUDControl):
     # Helper functions
     
     def libReadGlyph(self):
-        if self.debug: print("libReadGlyph")
+        if self.debug: print("libReadGlyph", self.glyph) # @@@ is it still the old glyph?
         # Read the zPosition data out of the glyph lib, but retain a dictionary of x,y,z in self.pointData for easy rotation
         self.pointData = {}
         # Rotate to the front
@@ -248,13 +288,21 @@ class ProjectionViewControl(BaseRoboHUDControl):
                 exactX = False
             if not loc["y"] == loc["z"]:
                 exactY = False
-        if exactX or  exactY:
+        if exactX or exactY:
+            for ptId, loc in self.pointData.items():
+                print(ptId, loc)
             return False
         else: return True
         
              
     def libWriteGlyph(self):
         if self.debug: print("libWriteGlyph", self.glyph, self.enableProjection)
+        if self.debug:
+            if self.LIBKEYVIEW in self.glyph.lib:
+                if not self.glyph.lib[self.LIBKEYVIEW] == self.currentView:
+                    # Don't write, because the lib thinks it should be in a different view
+                    print("VIEW PROBLEM when writing, glyph", self.glyph.lib[self.LIBKEYVIEW], "current", self.currentView)
+                    # @@@ Rotate back to the front?
         # Write the point data back to the glyph lib
         if self.enableProjection:
             if not self.glyph == None:
@@ -271,7 +319,7 @@ class ProjectionViewControl(BaseRoboHUDControl):
                         for ident, pointLoc in self.pointData.items():
                             libData[ident] = pointLoc["z"]
                         self.glyph.lib[self.LIBKEY].clear()
-                        self.glyph.lib[self.LIBKEY].update(libData)
+                        self.glyph.lib[self.LIBKEY] = copy.deepcopy(libData) # @@@.update(libData)
     
     def rotate(self, viewDirection, isSaving=False):
         if self.debug: print("rotate")
@@ -281,8 +329,6 @@ class ProjectionViewControl(BaseRoboHUDControl):
             self.holdChanges = True
             if not self.glyph == None:
                 if len(self.glyph.contours) > 0:
-                    # Clean up the data, just in case if the tool missed something
-                    self._updateXYZPointData()
                     for c in self.glyph.contours:
                         for pt in c.points:
                             ident = pt.name#getIdentifier()

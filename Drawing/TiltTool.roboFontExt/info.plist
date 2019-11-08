@@ -28,6 +28,14 @@
 			<key>shortKey</key>
 			<string></string>
 		</dict>
+		<dict>
+			<key>path</key>
+			<string>CurveSegments.py</string>
+			<key>preferredName</key>
+			<string>Convert all segments to curve</string>
+			<key>shortKey</key>
+			<string></string>
+		</dict>
 	</array>
 	<key>developer</key>
 	<string>Andy Clymer</string>
@@ -46,7 +54,7 @@
 	<key>requiresVersionMinor</key>
 	<string>3</string>
 	<key>timeStamp</key>
-	<real>1572550880.891674</real>
+	<real>1572983801.3436201</real>
 	<key>version</key>
 	<string>0.1</string>
 </dict>

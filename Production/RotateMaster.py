@@ -238,7 +238,7 @@ def flattenShadow(g, pointData, shadowDirection="right", shadowLengthFactor=1):
     return pointData
 
 
-def outlineGlyph(f, g, offsetAmount, contrast=0, contrastAngle=0, alwaysConnect=False):
+def outlineGlyph(f, g, offsetAmount, contrast=0, contrastAngle=0, alwaysConnect=False, cap="Roundsimple", connection="Round"):
     """
     Outline a glyph
     """
@@ -246,7 +246,7 @@ def outlineGlyph(f, g, offsetAmount, contrast=0, contrastAngle=0, alwaysConnect=
     gl = g.getLayer("background")
     gl.appendGlyph(g)
     # Outline
-    pen = OutlineFitterPen(f, offsetAmount, connection="Round", cap="Roundsimple", closeOpenPaths=True, alwaysConnect=alwaysConnect, contrast=contrast, contrastAngle=contrastAngle) 
+    pen = OutlineFitterPen(f, offsetAmount, connection=connection, cap=cap, closeOpenPaths=True, alwaysConnect=alwaysConnect, contrast=contrast, contrastAngle=contrastAngle) 
     g.draw(pen)
     g.clear()
     pen.drawSettings(drawOriginal=False, drawInner=True, drawOuter=True)
@@ -271,6 +271,9 @@ def buildDesignSpace(
         doMakeSubSources=False,
         familyName=None,
         alwaysConnect=False,
+        cap="RoundSimple",
+        connection="Round",
+        layerName=None,
         styleName=None):
     
     # Set up folders
@@ -298,6 +301,13 @@ def buildDesignSpace(
     for gName in glyphNames:
         if gName in masterFont:
             g = masterFont[gName]
+            if layerName:
+                # Copy point data to the layer
+                if ZPOSITIONLIBKEY in g.lib.keys():
+                    libdata = copy.deepcopy(g.lib[ZPOSITIONLIBKEY])
+                else: libdata = {}
+                g = g.getLayer(layerName)
+                g.lib[ZPOSITIONLIBKEY] = libdata
             pointData = readGlyphPointData(g)
             glyphPointData[gName] = pointData
             # Test for self-overlapping contours
@@ -406,6 +416,12 @@ def buildDesignSpace(
         
             # Get the glyph started
             g = masterFont[gName]
+            if layerName:
+                #if ZPOSITIONLIBKEY in g.lib.keys():
+                #    libdata = copy.deepcopy(g.lib[ZPOSITIONLIBKEY])
+                #else: libdata = {}
+                g = g.getLayer(layerName)
+                #g.lib[ZPOSITIONLIBKEY] = libdata
             # Remove the glyph if it already existed and make a new one
             if gName in sourceFont:
                 for layer in sourceFont.layers:
@@ -471,7 +487,7 @@ def buildDesignSpace(
         
             # Outline the glyph
             if outlineAmount:
-                outlineGlyph(sourceFont, gDest, outlineAmount, alwaysConnect=alwaysConnect)
+                outlineGlyph(sourceFont, gDest, outlineAmount, alwaysConnect=alwaysConnect, cap=cap, connection=connection)
             # Update
             gDest.changed()
             

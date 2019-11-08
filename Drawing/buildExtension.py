@@ -34,6 +34,11 @@ B.addToMenu = [
         'path' : 'GlyphPreview.py',
         'preferredName': 'Glyph Preview...',
         'shortKey' : '',
+    },
+    {
+        'path' : 'CurveSegments.py',
+        'preferredName': 'Convert all segments to curve',
+        'shortKey' : '',
     }]
     
 B.requiresVersionMajor = '3'
