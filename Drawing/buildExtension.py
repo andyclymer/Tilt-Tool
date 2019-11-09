@@ -13,7 +13,7 @@ resourcesPath = os.path.join(basePath, "resources")
 B = ExtensionBundle()
 
 B.name = "Tilt Tool"
-B.version = "0.1"
+B.version = "0.2"
 B.developer = "Andy Clymer"
 B.developerURL = 'http://www.andyclymer.com/'
 
@@ -36,8 +36,8 @@ B.addToMenu = [
         'shortKey' : '',
     },
     {
-        'path' : 'CurveSegments.py',
-        'preferredName': 'Convert all segments to curve',
+        'path' : 'WarpStarter.py',
+        'preferredName': 'Warp Starter...',
         'shortKey' : '',
     }]
     

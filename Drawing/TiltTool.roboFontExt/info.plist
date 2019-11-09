@@ -30,9 +30,9 @@
 		</dict>
 		<dict>
 			<key>path</key>
-			<string>CurveSegments.py</string>
+			<string>WarpStarter.py</string>
 			<key>preferredName</key>
-			<string>Convert all segments to curve</string>
+			<string>Warp Starter...</string>
 			<key>shortKey</key>
 			<string></string>
 		</dict>
@@ -54,8 +54,8 @@
 	<key>requiresVersionMinor</key>
 	<string>3</string>
 	<key>timeStamp</key>
-	<real>1572983801.3436201</real>
+	<real>1573333857.7505989</real>
 	<key>version</key>
-	<string>0.1</string>
+	<string>0.2</string>
 </dict>
 </plist>
