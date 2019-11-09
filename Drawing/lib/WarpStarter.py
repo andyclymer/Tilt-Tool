@@ -7,6 +7,17 @@ from fontTools.pens.basePen import BasePen
 
 
 
+"""
+
+NEXT STEP:
+
+    Warps nicely using the Y axis, but also use the X axis
+    Need two options (or three)
+        Warp Y, Warp X, Warp Both
+    How to warp both? Find both warp locations and average? Would this just flatten it back out?
+
+"""
+
 
 def getOpposite(angle, adjacent):
     # Get the opposite side of a triangle if we have the angle and the adjacent length
