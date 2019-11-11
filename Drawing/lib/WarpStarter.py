@@ -11,12 +11,13 @@ from fontTools.pens.basePen import BasePen
 
 NEXT STEP:
 
-    Warps nicely using the Y axis, but also use the X axis
-    Need two options (or three)
-        Warp Y, Warp X, Warp Both
-    How to warp both? Find both warp locations and average? Would this just flatten it back out?
+    Warping X and Y and interpolating the two, but I only see the warp from the "x"?
+    Need to update Projection View Control so that it sees external changes to the lib, not sure why the changes aren't showing up
+    Once interplation works, give a control in the UI for how much to interpolate X and Y warping
 
 """
+
+LIBKEY = "com.andyclymer.zPosition"
 
 
 def getOpposite(angle, adjacent):
@@ -39,16 +40,26 @@ def interpolatePoints(f, p0, p1, roundValue=False):
         return (int(round(x)), int(round(y)))
     else: return (x, y)
 
-def splitWithAngle(curve, y):
+def interpLib(f, lib0, lib1, doRound=True):
+    newLib = {}
+    for k in lib0.keys():
+        if k in lib1.keys():
+            v = interpolate(f, lib0[k], lib1[k])
+            if round:
+                v = int(round(v))
+            newLib[k] = v
+    return newLib
+
+def splitWithAngle(curve, loc, axis):
     # Split a curve at location y and return the location and angle
-    r = splitCubic(*curve, y, isHorizontal=True)
+    r = splitCubic(*curve, loc, isHorizontal=axis)
     if len(r) == 2:
         splitLoc = r[0][-1]
         a = getAngle(r[0][-1], r[1][1]) # handle to handle
     else:
-        # The y location is either exatly on the end of the curve, or off the curve
+        # The location is either exatly on the end of the curve, or off the curve
         # Return the angle and location either at the top or bottom
-        if y >= curve[0][1]:
+        if loc >= curve[0][axis]:
             splitLoc = curve[0]
             a = getAngle(curve[0], curve[1])
         else:
@@ -70,30 +81,36 @@ def absoluteBCP(anchor, bcp):
     
 
         
-def warpGlyph(g, angle=-40, floatingDist=120):
-    LIBKEY = "com.andyclymer.zPosition"
+def warpGlyph(g, angle=-40, floatingDist=120, axis=1):
+    # axis = axis to warp along, 1 = use "y" axis for measurement
 
     if len(g.contours):
 
         # Get point bounds (not the glyph bounds of the shape, but bounds of the handles too)
-        boundTop = g.bounds[3]
-        boundBot = g.bounds[1]
+        boundMax = g.bounds[axis+2]
+        boundMin = g.bounds[axis]
         for c in g.contours:
             for pt in c.points:
-                if pt.y > boundTop:
-                    boundTop = pt.y
-                if pt.y < boundBot:
-                    boundBot = pt.y
+                ptLoc = (pt.x, pt.y)
+                if ptLoc[axis] > boundMax:
+                    boundMax = pt[axis]
+                if pt.y < boundMin:
+                    boundMin = ptLoc[axis]
     
         # Find handle locations at 33.3 / 66.7 between these bounds
-        p0 = [0, boundTop]
-        p3 = [0, boundBot]
-        p1y = interpolate(0.3333, boundTop, boundBot)
-        p1x = getOpposite(angle, boundTop-p1y)
+        p0 = [0, boundMax]
+        p3 = [0, boundMin]
+        p1y = interpolate(0.3333, boundMax, boundMin)
+        p1x = getOpposite(angle, boundMax-p1y)
         p1 = [p1x, p1y]
-        p2y = interpolate(0.6667, boundTop, boundBot)
-        p2x = getOpposite(angle, p2y-boundBot)
+        p2y = interpolate(0.6667, boundMax, boundMin)
+        p2x = getOpposite(angle, p2y-boundMin)
         p2 = [p2x, p2y]
+        if axis == 0:
+            p0.reverse()
+            p1.reverse()
+            p2.reverse()
+            p3.reverse()
     
         if False: # Draw the curve
             pen = g.getPen()
@@ -103,12 +120,12 @@ def warpGlyph(g, angle=-40, floatingDist=120):
             g.changed()
     
         # Shift this curve so that it's balanced at the floatingDist
-        midPt = splitCubicAtT(p0, p1, p2, p3, 0.5)[0][-1][0]
+        midPt = splitCubicAtT(p0, p1, p2, p3, 0.5)[0][-1][not axis]
         floatShift = int(round((-midPt*0.5) + floatingDist))
-        p0[0] += floatShift
-        p1[0] += floatShift
-        p2[0] += floatShift
-        p3[0] += floatShift
+        p0[not axis] += floatShift
+        p1[not axis] += floatShift
+        p2[not axis] += floatShift
+        p3[not axis] += floatShift
         warpCurve = [p0, p1, p2, p3]
     
         # For each bpoint in the contour, find where it would it the curve
@@ -121,24 +138,27 @@ def warpGlyph(g, angle=-40, floatingDist=120):
         
             # Take care of the first moveTo
             pt = c.points[0]
-            splitLoc, angle = splitWithAngle(warpCurve, pt.y)
-            anchorZ = splitLoc[0]
+            ptLoc = (pt.x, pt.y)
+            splitLoc, angle = splitWithAngle(warpCurve, ptLoc[axis], axis)
+            anchorZ = splitLoc[not axis]
             if pt.name == None:
                 pt.name = makeUniqueName()
             libData[pt.name] = int(round(anchorZ))
             prevOnCurve = pt
+            prevOnCurveLoc = [pt.x, pt.y]
                 
             for s in c.segments:
                 if len(s.points) == 3:
                     # Split at the prevOnCurve to move this bcpOut
                     bcpOut = absoluteBCP(prevOnCurve, s.points[0])
-                    splitLoc, angle = splitWithAngle(warpCurve, prevOnCurve.y)
-                    bcpOutZ = getOpposite(angle, bcpOut[1]) + libData[prevOnCurve.name]
+                    splitLoc, angle = splitWithAngle(warpCurve, prevOnCurveLoc[axis], axis)
+                    bcpOutZ = getOpposite(angle, bcpOut[axis]) + libData[prevOnCurve.name]
                     # Split at the new on curve and move the bcpIn
                     bcpIn = absoluteBCP(s.points[-1], s.points[1])
-                    splitLoc, angle = splitWithAngle(warpCurve, s.points[-1].y)
-                    anchorZ = splitLoc[0]
-                    bcpInZ = getOpposite(angle, bcpIn[1]) + anchorZ
+                    endAnchorLoc = (s.points[-1].x, s.points[-1].y)
+                    splitLoc, angle = splitWithAngle(warpCurve, endAnchorLoc[axis], axis)
+                    anchorZ = splitLoc[not axis]
+                    bcpInZ = getOpposite(angle, bcpIn[axis]) + anchorZ
                 
                     # Three points now have three "z" values
                     # bcpOutZ, bcpInZ, anchorZ
@@ -149,14 +169,16 @@ def warpGlyph(g, angle=-40, floatingDist=120):
                         libData[pt.name] = int(round(zLocs[ptIdx]))
                 else:
                     pt = s.points[0]
-                    splitLoc, angle = splitWithAngle(warpCurve, pt.y)
-                    anchorZ = splitLoc[0]
+                    ptLoc = (pt.x, pt.y)
+                    splitLoc, angle = splitWithAngle(warpCurve, ptLoc[axis], axis)
+                    anchorZ = splitLoc[not axis]
                     if pt.name == None:
                         pt.name = makeUniqueName()
                     libData[pt.name] = int(round(anchorZ))
                 # Hold the previous onCurve for the next segment
                 prevOnCurve = s.points[-1]
-                        
+                prevOnCurveLoc = (prevOnCurve.x, prevOnCurve.y)
+           
         if LIBKEY in g.lib.keys():
             g.lib[LIBKEY].clear()
         g.lib[LIBKEY] = copy.deepcopy(libData)
@@ -225,17 +247,32 @@ class WarpWindow:
         g.performUndo()
     
     def doWarp(self, sender):
-        try:
-            g = CurrentGlyph()
-            g.prepareUndo("Warp Glyph")
-            angle = self.w.warpAngle.get()
-            angle = float(angle)
-            floatingDist = self.w.floatDist.get()
-            floatingDist = int(floatingDist)
-            g = CurrentGlyph()
-            warpGlyph(g, angle, floatingDist)
-            g.performUndo()
-        except: print("Couldn't warp! Bad values? No glyph?")
+        #try:
+        g = CurrentGlyph()
+        g.prepareUndo("Warp Glyph")
+        angle = self.w.warpAngle.get()
+        angle = float(angle)
+        floatingDist = self.w.floatDist.get()
+        floatingDist = int(floatingDist)
+        g = CurrentGlyph()
+        
+        # Make copies of the glyph
+        gHoriz = RGlyph()
+        gHoriz.appendGlyph(g)
+        gVert = RGlyph()
+        gVert.appendGlyph(g)
+        # Warp horizontally and vertically
+        warpGlyph(gHoriz, angle, floatingDist, axis=0)
+        warpGlyph(gVert, angle, floatingDist, axis=1)
+        # Interpoalte the lib values
+        newLib = {}
+        if LIBKEY in gHoriz.lib.keys() and LIBKEY in gVert.lib.keys():
+            newLib = interpLib(0.5, gHoriz.lib[LIBKEY], gVert.lib[LIBKEY])
+        # Apply the new lib values to the glyph
+        g.lib[LIBKEY] = copy.deepcopy(newLib)
+        
+        g.performUndo()
+        #except: print("Couldn't warp! Bad values? No glyph?")
             
 
 WarpWindow()
