@@ -65,6 +65,8 @@ def splitWithAngle(curve, loc, axis):
         else:
             splitLoc = curve[-1]
             a = getAngle(curve[-2], curve[-1])
+    if axis == 0:
+        a = 90 - a
     return splitLoc, a
     
 def makeUniqueName(length=None):
@@ -83,6 +85,9 @@ def absoluteBCP(anchor, bcp):
         
 def warpGlyph(g, angle=-40, floatingDist=120, axis=1):
     # axis = axis to warp along, 1 = use "y" axis for measurement
+    
+    #if axis == 0:
+    #    angle = - angle
 
     if len(g.contours):
 
@@ -93,8 +98,8 @@ def warpGlyph(g, angle=-40, floatingDist=120, axis=1):
             for pt in c.points:
                 ptLoc = (pt.x, pt.y)
                 if ptLoc[axis] > boundMax:
-                    boundMax = pt[axis]
-                if pt.y < boundMin:
+                    boundMax = ptLoc[axis]
+                if ptLoc[axis] < boundMin:
                     boundMin = ptLoc[axis]
     
         # Find handle locations at 33.3 / 66.7 between these bounds
@@ -183,6 +188,7 @@ def warpGlyph(g, angle=-40, floatingDist=120, axis=1):
             g.lib[LIBKEY].clear()
         g.lib[LIBKEY] = copy.deepcopy(libData)
 
+        g.changed()
 
 
 
@@ -228,11 +234,14 @@ class CurvePen(BasePen):
 class WarpWindow:
     
     def __init__(self):
-        self.w = vanilla.FloatingWindow((140, 110), "Warp Starter")
+        self.w = vanilla.FloatingWindow((140, 140), "Warp Starter")
         self.w.curveButton = vanilla.SquareButton((10, 10, -10, 25), "Curve Segments", sizeStyle="small", callback=self.doCurve)
-        self.w.warpButton = vanilla.SquareButton((10, 45, -10, 25), "AutoWarp", sizeStyle="small", callback=self.doWarp)
-        self.w.warpAngle = vanilla.EditText((10, 75, 58, 25), "-45")
-        self.w.floatDist = vanilla.EditText((72, 75, 58, 25), "120")
+        self.w.warpHButton = vanilla.SquareButton((10, 45, -10, 25), "AutoWarp H", sizeStyle="small", callback=self.doWarp)
+        self.w.warpHButton.id = "H"
+        self.w.warpHVButton = vanilla.SquareButton((10, 75, -10, 25), "AutoWarp H&V", sizeStyle="small", callback=self.doWarp)
+        self.w.warpHVButton.id = "HV"
+        self.w.warpAngle = vanilla.EditText((10, 105, 58, 25), "-50")
+        self.w.floatDist = vanilla.EditText((72, 105, 58, 25), "120")
         self.w.open()
     
     def doCurve(self, sender):
@@ -247,31 +256,44 @@ class WarpWindow:
         g.performUndo()
     
     def doWarp(self, sender):
-        #try:
         g = CurrentGlyph()
         g.prepareUndo("Warp Glyph")
         angle = self.w.warpAngle.get()
         angle = float(angle)
         floatingDist = self.w.floatDist.get()
         floatingDist = int(floatingDist)
+        
         g = CurrentGlyph()
         
-        # Make copies of the glyph
-        gHoriz = RGlyph()
-        gHoriz.appendGlyph(g)
-        gVert = RGlyph()
-        gVert.appendGlyph(g)
-        # Warp horizontally and vertically
-        warpGlyph(gHoriz, angle, floatingDist, axis=0)
-        warpGlyph(gVert, angle, floatingDist, axis=1)
-        # Interpoalte the lib values
-        newLib = {}
-        if LIBKEY in gHoriz.lib.keys() and LIBKEY in gVert.lib.keys():
-            newLib = interpLib(0.5, gHoriz.lib[LIBKEY], gVert.lib[LIBKEY])
-        # Apply the new lib values to the glyph
-        g.lib[LIBKEY] = copy.deepcopy(newLib)
+        if sender.id == "HV":
+            # Use a larger angle for horizontal and vertical warping
+            angle += 10
+            # Make a copy of the glyph to warp it a second time on the vertical axis
+            gVert = RGlyph()
+            gVert.appendGlyph(g)
+            # Warp on the vertical axis
+            warpGlyph(gVert, angle, floatingDist, axis=0)
+            
+        # Warp horizontally
+        warpGlyph(g, angle, floatingDist, axis=1)
         
+        # Interpoalte the lib values
+        if sender.id == "HV":
+            newLib = {}
+            if LIBKEY in g.lib.keys() and LIBKEY in gVert.lib.keys():
+                newLib = interpLib(0.5, g.lib[LIBKEY], gVert.lib[LIBKEY])
+            # Apply the new lib values to the glyph
+            g.lib[LIBKEY] = copy.deepcopy(newLib)
+            warpGlyph(gVert, angle, floatingDist, axis=1)
+            # Interpoalte the lib values
+            newLib = {}
+            if LIBKEY in g.lib.keys() and LIBKEY in gVert.lib.keys():
+                newLib = interpLib(0.5, g.lib[LIBKEY], gVert.lib[LIBKEY])
+            # Apply the new lib values to the glyph
+            g.lib[LIBKEY] = copy.deepcopy(newLib)
+
         g.performUndo()
+        g.changed()
         #except: print("Couldn't warp! Bad values? No glyph?")
             
 
