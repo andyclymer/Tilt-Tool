@@ -13,7 +13,7 @@ resourcesPath = os.path.join(basePath, "resources")
 B = ExtensionBundle()
 
 B.name = "Tilt Tool"
-B.version = "0.2"
+B.version = "0.4"
 B.developer = "Andy Clymer"
 B.developerURL = 'http://www.andyclymer.com/'
 

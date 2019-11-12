@@ -230,8 +230,8 @@ def flattenShadow(g, pointData, shadowDirection="right", shadowLengthFactor=1):
                 elif shadowDirection == "right":
                     x += z * shadowLengthFactor
                     y -= z * shadowLengthFactor
-                else: # straight down
-                    y -= (z + shadowOffset) * shadowLengthFactor
+                #else: # straight down
+                #    y -= (z + shadowOffset) * shadowLengthFactor
                 pointData[p.name]["x"] = x
                 pointData[p.name]["y"] = y
                 pointData[p.name]["z"] = 0
@@ -451,13 +451,11 @@ def buildDesignSpace(
                     pointData[ident]["z"] += zOffset
         
             # Extend the shadow
-            if "SANG" in sourceInfo.keys():
-                if sourceInfo["SANG"] == "minimum":
+            if "SANG" in sourceInfo["loc"].keys():
+                if sourceInfo["loc"]["SANG"] == -45:
                     shadowDirection = "left"
                 else: shadowDirection = "right"
-                if sourceInfo["SLEN"] == "minimum":
-                    finalShadowLengthFactor = 0
-                else: finalShadowLengthFactor = shadowLengthFactor
+                finalShadowLengthFactor = (sourceInfo["loc"]["SLEN"] * 0.01) * shadowLengthFactor
                 pointData = flattenShadow(gDest, pointData, shadowDirection, finalShadowLengthFactor)
         
             # Rotate the glyph

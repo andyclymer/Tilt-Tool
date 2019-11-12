@@ -135,6 +135,7 @@ class ProjectionViewControl(BaseRoboHUDControl):
         if not self.glyph == None:
             self.glyph.removeObserver(self, "Glyph.Changed")
             self.glyph.removeObserver(self, "Glyph.LibChanged")
+            self._updateXYZPointData()
             self.rotate("front")
             self.libWriteGlyph()
         self.glyph = None
@@ -165,6 +166,7 @@ class ProjectionViewControl(BaseRoboHUDControl):
         libCurrentView = None
         if self.LIBKEYVIEW in self.glyph.lib:
             libCurrentView = self.glyph.lib[self.LIBKEYVIEW]
+        else: libCurrentView = "front"
         if not self.currentView == libCurrentView:
             self.currentView = libCurrentView
             self.updateButtons()
@@ -231,6 +233,17 @@ class ProjectionViewControl(BaseRoboHUDControl):
                         self.pointData[ident]["x"] = locs[0]
                         self.pointData[ident]["y"] = locs[1]
                         self.pointData[ident]["z"] = locs[2]
+                # Remove point data for points that no longer exist
+                toRemove = []
+                allNames = []
+                for c in self.glyph.contours:
+                    for pt in c.points:
+                        allNames += [pt.name for pt in c.points]
+                for ident in self.pointData.keys():
+                    if not ident in allNames:
+                        toRemove.append(ident)
+                for ident in toRemove:
+                    del(self.pointData[ident])
         self.updateButtons()
         
     
@@ -248,18 +261,20 @@ class ProjectionViewControl(BaseRoboHUDControl):
             if self.LIBKEY in self.glyph.lib:
                 libData = self.glyph.lib[self.LIBKEY]
             else: libData = {}
-            # Read data out of the lib
-            for c in self.glyph.contours:
-                for pt in c.points:
-                    ident = getSetUniqueName(pt)
-                    if ident in libData:
-                        zLoc = libData[ident]
-                    else: zLoc = 0
-                    self.pointData[ident] = dict(x=pt.x, y=pt.y, z=zLoc)
-        # Enable the projection, if it's not already enabled
-        self.view.controlGroup.enableBox.set(1)
-        self.enableProjection = True
-        self.updateButtons()
+            # If there is libData, enable the projection and keep procesing
+            if len(libData.keys()):
+                # Enable the projection, if it's not already enabled
+                self.view.controlGroup.enableBox.set(1)
+                self.enableProjection = True
+                self.updateButtons()
+                # Finish processing the data out of the lib
+                for c in self.glyph.contours:
+                    for pt in c.points:
+                        ident = getSetUniqueName(pt)
+                        if ident in libData:
+                            zLoc = libData[ident]
+                        else: zLoc = 0
+                        self.pointData[ident] = dict(x=pt.x, y=pt.y, z=zLoc)
     
     def _dataCheck(self):
         # Make sure the point data looks valid
@@ -283,10 +298,12 @@ class ProjectionViewControl(BaseRoboHUDControl):
         if self.debug: print("libWriteGlyph", self.glyph, self.enableProjection)
         if self.debug:
             if self.LIBKEYVIEW in self.glyph.lib:
-                if not self.glyph.lib[self.LIBKEYVIEW] == self.currentView:
-                    # Don't write, because the lib thinks it should be in a different view
-                    print("VIEW PROBLEM when writing, glyph", self.glyph.lib[self.LIBKEYVIEW], "current", self.currentView)
-                    # @@@ Rotate back to the front?
+                glyphCurrentView = self.glyph.lib[self.LIBKEYVIEW]
+            else: glyphCurrentView = Front
+            if not glyphCurrentView == self.currentView:
+                # Don't write, because the lib thinks it should be in a different view
+                print("VIEW PROBLEM when writing, glyph", glyphCurentView, "current", self.currentView)
+                # @@@ Rotate back to the front?
         # Write the point data back to the glyph lib
         if self.enableProjection:
             if not self.glyph == None:
@@ -297,9 +314,13 @@ class ProjectionViewControl(BaseRoboHUDControl):
                     libData = {}
                     for ident, pointLoc in self.pointData.items():
                         libData[ident] = pointLoc["z"]
-                    if self.LIBKEY in self.glyph.lib:
-                        self.glyph.lib[self.LIBKEY].clear()
-                    self.glyph.lib[self.LIBKEY] = copy.deepcopy(libData)
+                    # Remove the old lib key and only update it if there's data
+                    if self.LIBKEY in self.glyph.lib.keys():
+                        del(self.glyph.lib[self.LIBKEY])
+                    #if self.LIBKEYVIEW in self.glyph.lib.keys():
+                    #    del(self.glyph.lib[self.LIBKEYVIEW])
+                    if len(libData.keys()):
+                        self.glyph.lib[self.LIBKEY] = copy.deepcopy(libData)
     
     def rotate(self, viewDirection, isSaving=False):
         if self.debug: print("rotate", viewDirection)
@@ -314,7 +335,7 @@ class ProjectionViewControl(BaseRoboHUDControl):
                             ident = pt.name
                             if ident in self.pointData:
                                 pointLoc = self.pointData[ident]
-                                if viewDirection == "front":
+                                if viewDirection in [None, "front"]:
                                     pt.x = pointLoc["x"]
                                     pt.y = pointLoc["y"]
                                 elif viewDirection == "side":
@@ -327,8 +348,12 @@ class ProjectionViewControl(BaseRoboHUDControl):
             # Update the interface
             self.currentView = viewDirection
             self.updateButtons()
-            # Update the lib
-            self.glyph.lib[self.LIBKEYVIEW] = viewDirection
+            # Update the lib. Remove the view direction from the lib once it's back to the front, 
+            # otherwise hold the direction in the lib to help with undo
+            if viewDirection == "front":
+                if self.LIBKEYVIEW in self.glyph.lib.keys():
+                    del(self.glyph.lib[self.LIBKEYVIEW])
+            else: self.glyph.lib[self.LIBKEYVIEW] = viewDirection
             self.glyph.performUndo()
             self.holdChanges = False
             
