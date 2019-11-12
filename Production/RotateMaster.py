@@ -246,11 +246,14 @@ def outlineGlyph(f, g, offsetAmount, contrast=0, contrastAngle=0, alwaysConnect=
     gl = g.getLayer("background")
     gl.appendGlyph(g)
     # Outline
-    pen = OutlineFitterPen(f, offsetAmount, connection=connection, cap=cap, closeOpenPaths=True, alwaysConnect=alwaysConnect, contrast=contrast, contrastAngle=contrastAngle) 
-    g.draw(pen)
-    g.clear()
-    pen.drawSettings(drawOriginal=False, drawInner=True, drawOuter=True)
-    pen.drawPoints(g.getPointPen())
+    try:
+        pen = OutlineFitterPen(f, offsetAmount, connection=connection, cap=cap, closeOpenPaths=True, alwaysConnect=alwaysConnect, contrast=contrast, contrastAngle=contrastAngle, preserveComponents=True) 
+        g.draw(pen)
+        g.clear()
+        pen.drawSettings(drawOriginal=False, drawInner=True, drawOuter=True)
+        pen.drawPoints(g.getPointPen())
+    except:
+        print("Problem outlining", g.name)
 
 
 
@@ -473,6 +476,9 @@ def buildDesignSpace(
             # Shift the glyph
             gDest.moveBy((-marginChange, 0))
             gDest.width -= marginChange * 2
+            # hift the components back?
+            for c in gDest.components:
+                c.moveBy((marginChange, 0))
             
             if doForceSmooth:
                 # If a bPoint was a smooth curve point in the original glyph,
