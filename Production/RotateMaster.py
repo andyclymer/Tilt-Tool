@@ -488,15 +488,28 @@ def buildDesignSpace(
                         sourceBPt = g.contours[cIdx].bPoints[bptIdx]
                         if sourceBPt.type == "curve":
                             forceSmooth(thisBPt)
+            
+            # Round the point coordinates before outlining
+            gDest.round()
+            gDest.changed()
         
             # Outline the glyph
             if outlineAmount:
                 outlineGlyph(sourceFont, gDest, outlineAmount, alwaysConnect=alwaysConnect, cap=cap, connection=connection)
+                
+                # Round the point coordinates again, now that it's outlined
+                gDest.round()
+                gDest.changed()
+                
             # Update
-            gDest.changed()
+            #gDest.changed()
             
         # Resort the font
         sourceFont.glyphOrder = masterFont.glyphOrder
+        
+        # Copy the kerning
+        sourceFont.groups.update(copy.deepcopy(masterFont.groups))
+        sourceFont.kerning.update(copy.deepcopy(masterFont.kerning))
         
         # Done, save
         sourceFont.changed()

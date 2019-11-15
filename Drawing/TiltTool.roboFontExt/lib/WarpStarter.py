@@ -245,7 +245,7 @@ class WarpWindow:
         self.w.warpHVButton = vanilla.SquareButton((10, step, -10, 25), "AutoWarp H&V", sizeStyle="small", callback=self.doWarp)
         self.w.warpHVButton.id = "HV"
         step += 30
-        self.w.warpAngle = vanilla.EditText((10, step, 58, 25), "-50")
+        self.w.warpAngle = vanilla.EditText((10, step, 58, 25), "-35")
         self.w.floatDist = vanilla.EditText((72, step, 58, 25), "120")
         step += 35
         self.w.selectionChoice = vanilla.RadioGroup((10, step, -10, 35), ["Current Glyph", "Selected Glyphs"], sizeStyle="small")
