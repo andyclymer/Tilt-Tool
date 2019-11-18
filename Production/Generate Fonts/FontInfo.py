@@ -77,8 +77,3 @@ def setFontInfo(f, familyName, styleName, version=(0, 0)):
     for k, v in infoDict.items():
         setattr(f.info, k, v)
     
-
-
-
-f = CurrentFont()
-setFontInfo(f, "Tilt", "Super")
