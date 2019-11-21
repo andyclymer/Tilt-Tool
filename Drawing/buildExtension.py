@@ -39,6 +39,11 @@ B.addToMenu = [
         'path' : 'WarpStarter.py',
         'preferredName': 'Warp Starter...',
         'shortKey' : '',
+    },
+    {
+        'path' : 'CurveSegments.py',
+        'preferredName': 'Convert to curve segments',
+        'shortKey' : '',
     }]
     
 B.requiresVersionMajor = '3'

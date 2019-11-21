@@ -1,7 +1,7 @@
+import os
 
 
-
-def setFontInfo(f, familyName, styleName, version=(0, 0)):
+def setFontInfo(f, familyName, styleName, version=(0, 0), versionString=""):
 
     infoDict = dict(
     
@@ -16,9 +16,10 @@ def setFontInfo(f, familyName, styleName, version=(0, 0)):
         
         versionMajor = version[0],
         versionMinor = version[1],
+        openTypeNameVersion = "%s.%s %s" % (version[0], version[1], versionString),
         year = 2019,
-        #copyright = "",
-        #trademark = "",
+        copyright = "EARLY BETA VERSION, please don't redistribute! Thanks --Andy",
+        trademark = "EARLY BETA VERSION, please don't redistribute! Thanks --Andy",
         
         unitsPerEm = 1000,
         descender = -160,
@@ -39,9 +40,9 @@ def setFontInfo(f, familyName, styleName, version=(0, 0)):
 
         openTypeNameDesigner = "Andy Clymer",
         openTypeNameDesignerURL = "http://www.andyclymer.com/",
-        #openTypeNameManufacturer = "",
-        #openTypeNameManufacturerURL = "",
-        #openTypeNameLicense = "",
+        openTypeNameManufacturer = "Andy Clymer",
+        openTypeNameManufacturerURL = "http://www.andyclymer.com/",
+        openTypeNameLicense = "EARLY BETA VERSION, please don't redistribute! Thanks --Andy",
         #openTypeNameLicenseURL = "",
         #openTypeNameUniqueID = None,
         #openTypeNameDescription = None,
@@ -77,3 +78,24 @@ def setFontInfo(f, familyName, styleName, version=(0, 0)):
     for k, v in infoDict.items():
         setattr(f.info, k, v)
     
+
+
+sourceFolderPath = "/Users/clymer/Documents/Code/Git repos/GitHub/andyclymer/Tilt-Typeface/sources/Tilt Warp/Rotated Shadow"
+for fileName in os.listdir(sourceFolderPath):
+    if fileName.endswith(".ufo"):
+        ufoPath = os.path.join(sourceFolderPath, fileName)
+        
+        print(fileName)
+        f = OpenFont(ufoPath, showInterface=False)
+        
+        familyName = "Tilt Beta Warp Shadow"
+        styleName = "Regular"
+        version = (0, 2)
+        versionString = "BETA 2019_11_20"
+        
+        setFontInfo(f, familyName, styleName, version=version, versionString=versionString)
+        
+        f.save()
+
+print("Done")
+        

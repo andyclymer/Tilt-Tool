@@ -187,6 +187,14 @@ class ProjectionViewControl(BaseRoboHUDControl):
     
     # Helper functions
     
+    def _getNeighborOnCurves(self, point):
+        prevOnCurve = None
+        nextOnCurve = None
+        idx = point.contour.index(point)
+        print(idx)
+    # @@@@@@@@@
+        
+    
     
     def _updateXYZPointData(self):
         if self.debug: print("_updateXYZPointData (glyph drawing changed)")
@@ -215,6 +223,8 @@ class ProjectionViewControl(BaseRoboHUDControl):
                                 nextIdx = 0
                             prevIdent = getSetUniqueName(c.points[ptIdx-1])
                             nextIdent = getSetUniqueName(c.points[nextIdx])
+                            # @@@ Find this segment, split the old curve in 3D
+                            # @@@ To find the segment, find the next and prev onCurve
                             if prevIdent in self.pointData and nextIdent in self.pointData:
                                 # Interpolate the prev/next values (it's better than nothing)
                                 tempData = dict(
