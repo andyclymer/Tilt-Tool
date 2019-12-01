@@ -1,7 +1,7 @@
 from fontTools.designspaceLib import DesignSpaceDocument, AxisDescriptor, SourceDescriptor, RuleDescriptor
 from fontParts.world import OpenFont, NewFont
 from ac.data.names import getUniqueName
-from ac.xtra.euclid import *
+from euclid import *
 from outlineFitterPen import OutlineFitterPen, MathPoint
 import math
 import os

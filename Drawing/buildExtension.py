@@ -5,15 +5,15 @@ from mojo.extensions import ExtensionBundle
 
 
 basePath = os.path.dirname(__file__)
-extensionPath = os.path.join(basePath, "TiltTool.roboFontExt")
+extensionPath = os.path.join(basePath, "3DProjectionView.roboFontExt")
 libPath = os.path.join(basePath, "lib")
 htmlPath = os.path.join(basePath, "html")
 resourcesPath = os.path.join(basePath, "resources")
 
 B = ExtensionBundle()
 
-B.name = "Tilt Tool"
-B.version = "0.4"
+B.name = "3D Projection View"
+B.version = "0.5"
 B.developer = "Andy Clymer"
 B.developerURL = 'http://www.andyclymer.com/'
 
@@ -32,23 +32,13 @@ B.addToMenu = [
     },
     {
         'path' : 'GlyphPreview.py',
-        'preferredName': 'Glyph Preview...',
-        'shortKey' : '',
-    },
-    {
-        'path' : 'WarpStarter.py',
-        'preferredName': 'Warp Starter...',
-        'shortKey' : '',
-    },
-    {
-        'path' : 'CurveSegments.py',
-        'preferredName': 'Convert to curve segments',
+        'preferredName': 'DesignSpace Preview...',
         'shortKey' : '',
     }]
     
 B.requiresVersionMajor = '3'
 B.requiresVersionMinor = '3'
-B.infoDictionary["html"] = False
+B.infoDictionary["html"] = True
 
 B.save(extensionPath, libPath=libPath, htmlPath=htmlPath, resourcesPath=resourcesPath, pycOnly=False)
 

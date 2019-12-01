@@ -24,23 +24,7 @@
 			<key>path</key>
 			<string>GlyphPreview.py</string>
 			<key>preferredName</key>
-			<string>Glyph Preview...</string>
-			<key>shortKey</key>
-			<string></string>
-		</dict>
-		<dict>
-			<key>path</key>
-			<string>WarpStarter.py</string>
-			<key>preferredName</key>
-			<string>Warp Starter...</string>
-			<key>shortKey</key>
-			<string></string>
-		</dict>
-		<dict>
-			<key>path</key>
-			<string>CurveSegments.py</string>
-			<key>preferredName</key>
-			<string>Convert to curve segments</string>
+			<string>DesignSpace Preview...</string>
 			<key>shortKey</key>
 			<string></string>
 		</dict>
@@ -50,20 +34,20 @@
 	<key>developerURL</key>
 	<string>http://www.andyclymer.com/</string>
 	<key>html</key>
-	<false/>
+	<true/>
 	<key>launchAtStartUp</key>
 	<false/>
 	<key>mainScript</key>
 	<string>ProjectionViewControl.py</string>
 	<key>name</key>
-	<string>Tilt Tool</string>
+	<string>3D Projection View</string>
 	<key>requiresVersionMajor</key>
 	<string>3</string>
 	<key>requiresVersionMinor</key>
 	<string>3</string>
 	<key>timeStamp</key>
-	<real>1574180805.4729271</real>
+	<real>1575241626.7315431</real>
 	<key>version</key>
-	<string>0.4</string>
+	<string>0.5</string>
 </dict>
 </plist>
