@@ -195,6 +195,32 @@ class ProjectionViewControl(BaseRoboHUDControl):
     # @@@@@@@@@
         
     
+    def _cleanXYZPointData(self):
+        # Before most operations, a check and a fix can be done on the pointData.
+        # 1) If multiple points share the same ID, assign new IDs and copy pointData entries for the new point IDs
+        if not self.glyph == None:
+            allNames = []
+            didChange = False
+            for c in self.glyph.contours:
+                for pt in c.points:
+                    ident = getSetUniqueName(pt)
+                    if not ident in allNames:
+                        allNames.append(ident)
+                    else:
+                        if self.debug: print("Found a duplicate name!")
+                        # Names are doubled up. Give the point a new name
+                        pt.name = None
+                        newIdent = getSetUniqueName(pt)
+                        # Copy the old z location to this point and add a new entry in the pointData dict
+                        if ident in self.pointData:
+                            self.pointData[newIdent] = dict(x=pt.x, y=pt.y, z=self.pointData[ident]["z"])
+                        didChange = True
+            if didChange:
+                self.libWriteGlyph()
+                self.glyph.changed()
+                
+                    
+    
     
     def _updateXYZPointData(self):
         if self.debug: print("_updateXYZPointData (glyph drawing changed)")
@@ -309,7 +335,7 @@ class ProjectionViewControl(BaseRoboHUDControl):
         if self.debug:
             if self.LIBKEYVIEW in self.glyph.lib:
                 glyphCurrentView = self.glyph.lib[self.LIBKEYVIEW]
-            else: glyphCurrentView = Front
+            else: glyphCurrentView = "front"
             if not glyphCurrentView == self.currentView:
                 # Don't write, because the lib thinks it should be in a different view
                 print("VIEW PROBLEM when writing, glyph", glyphCurentView, "current", self.currentView)
@@ -337,6 +363,9 @@ class ProjectionViewControl(BaseRoboHUDControl):
         # Rotate the points in the glyph window
         if self.enableProjection:
             self.glyph.prepareUndo("Rotate")
+            # First, clean up the point data
+            self._cleanXYZPointData()
+            # Then, move the points around
             self.holdChanges = True
             if not self.glyph == None:
                 if len(self.glyph.contours) > 0:
