@@ -1,6 +1,4 @@
 
-from ac.data.names import getUniqueName
-
 
 HTMLTEMPLATE = """<!doctype html>
 <html lang="en">
@@ -90,12 +88,21 @@ CANVASWIDTH = 600
 CANVASHEIGHT = 600
 
 
+def makeUniqueName(length=None):
+    if not length:
+        length = 8
+    name = ""
+    for i in range(length):
+        name += random.choice("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    return name
+
+
 def getZ(pointData, point):
     # Get the z value for this point from the pointData
     ident = point.name#getIdentifier()
     if ident == None:
         allNames = self.pointData.keys()
-        ident = getUniqueName(kind="waypoint", otherNames=allNames)
+        ident = makeUniqueName()
         pt.name = ident
     if ident in pointData:
         ptData = pointData[ident]

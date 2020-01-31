@@ -9,7 +9,7 @@ from mojo.events import addObserver, removeObserver
 from fontTools.designspaceLib import DesignSpaceDocument
 from ufoProcessor import DesignSpaceProcessor
 
-from ac.xtra.euclid import Vector3
+from euclid import Vector3
 
 
 def measureBCPs(bPt):
