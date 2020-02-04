@@ -148,16 +148,17 @@ class ProjectionViewControl(BaseRoboHUDControl):
     def glyphDidChange(self, info):
         if self.debug: print("glyphDidChange", info["glyph"])
         # If there is a new glyph, get set up and read lib data
-        self.glyph = info["glyph"]
-        if not self.glyph == None:
-            self.glyph.addObserver(self, "glyphDataChanged", "Glyph.Changed")
-            self.glyph.addObserver(self, "glyphLibDataChanged", "Glyph.LibChanged")
-            self.libReadGlyph()
-            # If there is pointData, enable projection editing
-            if len(self.pointData.keys()) > 0:
-                self.view.controlGroup.enableBox.set(1)
-                self.enableProjection = True
-                self.updateButtons()
+        if not self.glyph == info["glyph"]:
+            self.glyph = info["glyph"]
+            if not self.glyph == None:
+                self.glyph.addObserver(self, "glyphDataChanged", "Glyph.Changed")
+                self.glyph.addObserver(self, "glyphLibDataChanged", "Glyph.LibChanged")
+                self.libReadGlyph()
+                # If there is pointData, enable projection editing
+                if len(self.pointData.keys()) > 0:
+                    self.view.controlGroup.enableBox.set(1)
+                    self.enableProjection = True
+                    self.updateButtons()
     
     def glyphDataChanged(self, notification):
         if self.debug: print("glyphDataChanged, hold:", self.holdChanges)
