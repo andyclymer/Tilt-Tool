@@ -107,7 +107,7 @@ class PreviewWindow(object):
         
         step = 10
         
-        self.w = vanilla.Window((660, 600), "Tilt DesignSpace Preview", minSize=(320, 500), autosaveName="Tilt DesignSpace Preview")
+        self.w = vanilla.Window((660, 600), "Rotated DesignSpace Preview", minSize=(320, 500), autosaveName="Rotated DesignSpace Preview")
         
         self.w.openButton = vanilla.SquareButton((10, step, 150, 25), "Open Designspace", sizeStyle="small", callback=self.openDesignSpace)
         self.w.reloadButton = vanilla.SquareButton((10, step+35, 150, 25), "Refresh Designspace", sizeStyle="small", callback=self.reloadDesignSpace)

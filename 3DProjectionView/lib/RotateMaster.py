@@ -1,14 +1,13 @@
 from fontTools.designspaceLib import DesignSpaceDocument, AxisDescriptor, SourceDescriptor, RuleDescriptor
 from fontParts.world import OpenFont, NewFont
-from ac.data.names import getUniqueName
 from euclid import *
 from outlineFitterPen import OutlineFitterPen, MathPoint
 import math
 import os
 import copy
+import random
 
 import outlineFitterPen
-print(outlineFitterPen.__file__)
 
 
 AXISINFO = {
@@ -16,18 +15,32 @@ AXISINFO = {
     "VROT": dict(name="Vertical Rotation", minimum=-45, maximum=45, default=0),
     "DPTH": dict(name="Depth", minimum=-100, maximum=100, default=100),
     "SLEN": dict(name="Shadow Length", minimum=0, maximum=100, default=100),
-    "SANG": dict(name="Shadow Angle", minimum=-45, maximum=45, default=45)}
+    "SANG": dict(name="Shadow Angle", minimum=-45, maximum=45, default=45),
+    "DPTH": dict(name="Depth", minimum=0, maximum=100, default=100)}
 AXISORDER = ["HROT", "VROT", "DPTH", "SLEN", "SANG"]
 SLIGHTLYOFFAXIS = 0.01
+
+# Glyph mark color for glyphs that are bulit up using Glyph Construction
+# These glyphs will be rebuilt after being rotated
+COMPOSITEGRAY = (0.502, 0.502, 0.502, 1.0)
 
 
 def getIdent(pt, pointData={}):
     # Get the point name, and set a name if one doesn't exist
     ident = pt.name
     if ident == None:
-        ident = getUniqueName(kind="waypoint", otherNames=list(pointData.keys()))
+        ident = makeUniqueName()
         pt.name = ident
     return ident
+
+
+def makeUniqueName(length=None):
+    if not length:
+        length = 8
+    name = ""
+    for i in range(length):
+        name += random.choice("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    return name
 
 
 ZPOSITIONLIBKEY = "com.andyclymer.zPosition"
@@ -52,6 +65,10 @@ def readGlyphPointData(glyph):
                 else: zLoc = 0
                 pointData[ident] = dict(x=pt.x, y=pt.y, z=zLoc)
     return pointData
+
+
+def boundsCenter(bounds):
+    return (bounds[2]+bounds[0]) * 0.5, (bounds[3]+bounds[1]) *0.5
 
 
 def forceSmooth(bPt):
@@ -157,42 +174,36 @@ def rotateGlyphPointData(g, loc, pointData, angle=45, aLoc=None):
     axisVectorX = Vector3(1, 0, 0)
     axisVectorY = Vector3(0, 1, 0)
     
-    # Location in the glph for the rotation to happen
+    # Location in the glyph for the rotation to happen
     aLoc = (g.width * 0.5, 
             g.font.info.xHeight * 0.5,
             0)
-            
-    for c in g.contours:
-        for pt in c.points:
-            
-            # Fetch the point data
-            ident = getIdent(pt)
-            
-            if ident in pointData:
-                # and make a vector object
-                v = Vector3(pointData[ident]["x"], pointData[ident]["y"], pointData[ident]["z"])
-        
-                # Invert the "z" position @@@ no longer necessary
-                #v.z = -v.z
-                #v.z = v.z * 0.5
-                # Translate
-                m = Matrix4.new_translate(-aLoc[0], -aLoc[1], -aLoc[2])
-                v = m.transform(v)
-                # Rotate X
-                m = m.new_rotate_axis(math.radians(loc["VROT"]), axisVectorX)
-                v = m.transform(v)
-                # Rotate Y
-                m = m.new_rotate_axis(math.radians(loc["HROT"]), axisVectorY)
-                v = m.transform(v)
-                # Translate
-                m = Matrix4.new_translate(aLoc[0], aLoc[1], aLoc[2])
-                v = m.transform(v)
-            
-                # Move the point in the pointData
-                pointData[ident]["x"] = v.x
-                pointData[ident]["y"] = v.y
-                pointData[ident]["z"] = v.z
                 
+    for ident in pointData:
+        # make a vector object
+        v = Vector3(pointData[ident]["x"], pointData[ident]["y"], pointData[ident]["z"])
+
+        # Invert the "z" position @@@ no longer necessary
+        #v.z = -v.z
+        #v.z = v.z * 0.5
+        # Translate
+        m = Matrix4.new_translate(-aLoc[0], -aLoc[1], -aLoc[2])
+        v = m.transform(v)
+        # Rotate X
+        m = m.new_rotate_axis(math.radians(loc["VROT"]), axisVectorX)
+        v = m.transform(v)
+        # Rotate Y
+        m = m.new_rotate_axis(math.radians(loc["HROT"]), axisVectorY)
+        v = m.transform(v)
+        # Translate
+        m = Matrix4.new_translate(aLoc[0], aLoc[1], aLoc[2])
+        v = m.transform(v)
+    
+        # Move the point in the pointData
+        pointData[ident]["x"] = v.x
+        pointData[ident]["y"] = v.y
+        pointData[ident]["z"] = v.z
+        
     # Transform the margins
     # Rotate a point from (0, 0) and use the x offset for both margins
     v = Vector3(0, 0, 0)
@@ -205,7 +216,7 @@ def rotateGlyphPointData(g, loc, pointData, angle=45, aLoc=None):
     m = Matrix4.new_translate(aLoc[0], aLoc[1], aLoc[2])
     v = m.transform(v)
     # The "y" value is the LSB and RSB offset
-    marginChange = int(round(v[0]))
+    marginChange = int(round(v[0])), int(round(v[1]))
                 
     return marginChange, pointData
 
@@ -249,7 +260,10 @@ def outlineGlyph(f, g, offsetAmount, contrast=0, contrastAngle=0, alwaysConnect=
     try:
         pen = OutlineFitterPen(f, offsetAmount, connection=connection, cap=cap, closeOpenPaths=True, alwaysConnect=alwaysConnect, contrast=contrast, contrastAngle=contrastAngle, preserveComponents=True) 
         g.draw(pen)
-        g.clear()
+        # Be careful to maintain the anchors, only clear contours and components
+        g.clearContours()
+        g.clearComponents()
+        # Draw the glyph
         pen.drawSettings(drawOriginal=False, drawInner=True, drawOuter=True)
         pen.drawPoints(g.getPointPen())
     except:
@@ -263,7 +277,7 @@ def outlineGlyph(f, g, offsetAmount, contrast=0, contrastAngle=0, alwaysConnect=
 
 
 def buildDesignSpace(
-        masterPath=None, 
+        masterFont=None, 
         destPath=None, 
         glyphNames=[],
         compositionType="rotate", 
@@ -278,22 +292,36 @@ def buildDesignSpace(
         connection="Round",
         layerName=None,
         styleName=None):
+
+    # Open the master UFO
+    if type(masterFont) == str:
+        masterFont = OpenFont(masterPath, showInterface=False)
     
-    # Set up folders
-    basePath, masterFileName = os.path.split(masterPath)
+    # Get the master file name, if it's saved
+    basePath = None
+    masterFileName = "Font"
+    if masterFont.path:
+        basePath, masterFileName = os.path.split(masterFont.path)
+    
+    # Try to make a dest path, if there isn't one
     if destPath == None:
-        destPath = os.path.join(basePath, "Rotated")
+        if basePath:
+            destPath = os.path.join(basePath, "Rotated")
+    
     # Make new folders for the destPath
     if not os.path.exists(destPath):
         os.makedirs(destPath)
-
-    # Open the master UFO
-    masterFont = OpenFont(masterPath, showInterface=False)
     
     # Use all glyphs, if no names are called for
     if glyphNames == []:
         glyphNames = list(masterFont.keys())
         glyphNames.sort()
+    
+    # Default names
+    if not familyName:
+        familyName = masterFont.info.familyName
+    if not styleName:
+        styleName = "Regular"
     
     """ Collect glyph data """
     # Organize the point data out of the glyph lib
@@ -336,15 +364,23 @@ def buildDesignSpace(
                         loc = dict(HROT=locHROT, VROT=locVROT, SLEN=locSLEN, SANG=locSANG)
                         sourceInfo = dict(glyphNames=glyphNames, loc=loc, fileName=fileName, nudgeLoc=[0, 0])
                         sourceCombinations.append(sourceInfo)
-            else: # Rotate only, skip the shadow axis data
+            elif "depth" in compositionType:
+                for locDPTH, tagDPTH in [(0, "DPTHn"), (100, "DPTHx")]:
+                    # Rotate and depth
+                    fileName = "Source-%s_%s_%s.ufo" % (tagHROT, tagVROT, tagDPTH)
+                    loc = dict(HROT=locHROT, VROT=locVROT, DPTH=locDPTH)
+                    sourceInfo = dict(glyphNames=glyphNames, loc=loc, fileName=fileName, nudgeLoc=[0, 0])
+                    sourceCombinations.append(sourceInfo)
+            else:
+                # Rotate only
                 fileName = "Source-%s_%s.ufo" % (tagHROT, tagVROT)
                 loc = dict(HROT=locHROT, VROT=locVROT)
                 sourceInfo = dict(glyphNames=glyphNames, loc=loc, fileName=fileName, nudgeLoc=[0, 0])
                 sourceCombinations.append(sourceInfo)
     
     # Process the sourceCombinations and make SubSources if necessary
-    print("needSubHROT", needSubHROT)
-    print("needSubVROT", needSubVROT)
+    #print("needSubHROT", needSubHROT)
+    #print("needSubVROT", needSubVROT)
     # @@@ Temporarily force all glyphs to be in all submasters
     needSubHROT = glyphNames
     needSubVROT = glyphNames
@@ -399,7 +435,7 @@ def buildDesignSpace(
             sourceFont.info.styleName = styleName
             sourceFont.save()
             sourceFont.close()
-    
+        
 
     """ Process Glyphs into Source UFOs """
     
@@ -415,16 +451,14 @@ def buildDesignSpace(
         sourceFont = OpenFont(sourceUfoPath, showInterface=False)
         
         for gName in sourceInfo["glyphNames"]:
-            pointData = copy.deepcopy(glyphPointData[gName])
+            if gName in glyphPointData:
+                pointData = copy.deepcopy(glyphPointData[gName])
+            else: pointData = {}
         
             # Get the glyph started
             g = masterFont[gName]
             if layerName:
-                #if ZPOSITIONLIBKEY in g.lib.keys():
-                #    libdata = copy.deepcopy(g.lib[ZPOSITIONLIBKEY])
-                #else: libdata = {}
                 g = g.getLayer(layerName)
-                #g.lib[ZPOSITIONLIBKEY] = libdata
             # Remove the glyph if it already existed and make a new one
             if gName in sourceFont:
                 for layer in sourceFont.layers:
@@ -436,22 +470,46 @@ def buildDesignSpace(
             gDest.width = g.width
             gDest.unicode = g.unicode
             
-            # Decompose
-            """ # @@@ Leaving this out for now, decomposed contours lose their point IDs
-            for c in gDest.components:
-                baseName = c.baseGlyph
-                c.decompose()
-                # ...and copy over point data
-                #baseGlyph = masterFont[baseName]
-                basePointData = copy.deepcopy(glyphPointData[baseName])
-                for ident in basePointData:
-                    pointData[ident] = basePointData[ident]
-            """
+            # Add anchors to the pointData so that they shift correctly
+            # Use anchor + str(idx) as the ident
+            for aIdx, anc in enumerate(gDest.anchors):
+                ident = "anchor%s" % aIdx
+                pos = list(anc.position)
+                pointData[ident] = dict(x=pos[0], y=pos[1], z=0)
+            
+            # Decompose components in glyphs that were not bulit with Glyph Builder
+            #   If the glyph has components, and if it's not marked with the "Glyph Builder Gray",
+            #   it will need to be decomposed at this stage (but leave overlaps of course)
+            #   Otherwise, glyphs that are gray will have their components reapplied after rotating with Glyph Builder.
+            isComponent = False
+            if not g.markColor == COMPOSITEGRAY:
+                if len(gDest.components):
+                    for c in gDest.components:
+                        baseName = c.baseGlyph
+                        masterBaseGlyph = masterFont[baseName]
+                        # Decomposing from the master font because the base glyph might not be in the source font yet
+                        for mc in masterBaseGlyph.contours:
+                            gDest.appendContour(mc, offset=c.offset)
+                        gDest.removeComponent(c)
+                        # ...and copy over point data, taking into account the component offset
+                        if baseName in glyphPointData:
+                            basePointData = copy.deepcopy(glyphPointData[baseName])
+                            for ident in basePointData:
+                                pointData[ident] = dict(x = basePointData[ident]["x"] + c.offset[0], 
+                                                        y = basePointData[ident]["y"] + c.offset[1], 
+                                                        z = basePointData[ident]["z"])
+                        isComponent = True
+            
+            # Flatten the depth
+            if "DPTH" in sourceInfo["loc"].keys():
+                for ident in pointData:
+                    pointData[ident]["z"] *= (sourceInfo["loc"]["DPTH"] * 0.01) # Scale by the depth value
             
             # Shift the "z" value by an offset
-            if zOffset:
+            if not zOffset == None:
                 for ident in pointData:
-                    pointData[ident]["z"] += zOffset
+                    if not "anchor" in ident: # ...but don't shift the anchors, the components are already shifted
+                        pointData[ident]["z"] += zOffset
         
             # Extend the shadow
             if "SANG" in sourceInfo["loc"].keys():
@@ -465,7 +523,7 @@ def buildDesignSpace(
             # Merge the location and the nudgeLoc, if there is one
             marginChange, pointData = rotateGlyphPointData(gDest, rotateLoc, pointData)
             
-            # Move the points
+            # Move the contour points into the correct position
             for c in gDest.contours:
                 for pt in c.points:
                     ident = getIdent(pt)
@@ -473,14 +531,19 @@ def buildDesignSpace(
                         pt.x = pointData[ident]["x"]
                         pt.y = pointData[ident]["y"]
             
-            # Shift the glyph
-            gDest.moveBy((-marginChange, 0))
-            gDest.width -= marginChange * 2
-            # hift the components back?
-            for c in gDest.components:
-                c.moveBy((marginChange, 0))
+            # Move the anchors into the correct position
+            for aIdx, anc in enumerate(gDest.anchors):
+                ident = "anchor%s" % aIdx
+                if ident in pointData:
+                    anc.position = (int(round(pointData[ident]["x"])), 
+                                    int(round(pointData[ident]["y"])))
             
-            if doForceSmooth:
+            # Shift the glyph to take in the sidebearings
+            gDest.moveBy((-marginChange[0], 0))
+            gDest.width -= marginChange[0] * 2
+            
+
+            if doForceSmooth and not isComponent:
                 # If a bPoint was a smooth curve point in the original glyph,
                 # force the related bPoint in the rotated glyph to be smooth
                 for cIdx, c in enumerate(gDest.contours):
@@ -511,13 +574,16 @@ def buildDesignSpace(
         sourceFont.groups.update(copy.deepcopy(masterFont.groups))
         sourceFont.kerning.update(copy.deepcopy(masterFont.kerning))
         
+        # Copy the features
+        sourceFont.features.text = masterFont.features.text
+        
         # Done, save
         sourceFont.changed()
         sourceFont.save()
         
  
     """ New DesignSpaceDocument """
-        
+
     designSpace = DesignSpaceDocument()
     designSpaceDocFilename = os.path.splitext(masterFileName)[0] + ".designspace"
     designSpaceDocPath = os.path.join(destPath, designSpaceDocFilename)
@@ -547,7 +613,7 @@ def buildDesignSpace(
         #s.font = defcon.Font(s.name)
         s.copyLib = True
         s.copyInfo = True
-        s.copyFeatures = True
+        s.copyInfoures = True
         s.familyName = masterFont.info.familyName
         s.styleName = s.name
         # Convert the loc from tags to names

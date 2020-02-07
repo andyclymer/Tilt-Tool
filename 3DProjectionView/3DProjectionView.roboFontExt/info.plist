@@ -22,7 +22,7 @@
 		</dict>
 		<dict>
 			<key>path</key>
-			<string>ProjectionPreview.py</string>
+			<string>RotateFontWindow.py</string>
 			<key>preferredName</key>
 			<string>Build Rotated Masters...</string>
 			<key>shortKey</key>
@@ -54,7 +54,7 @@
 	<key>requiresVersionMinor</key>
 	<string>3</string>
 	<key>timeStamp</key>
-	<real>1581104479.1884151</real>
+	<real>1581112909.9479811</real>
 	<key>version</key>
 	<string>0.9</string>
 </dict>

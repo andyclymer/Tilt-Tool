@@ -31,7 +31,7 @@ B.addToMenu = [
         'shortKey' : '',
     },
     {
-        'path' : 'ProjectionPreview.py',
+        'path' : 'RotateFontWindow.py',
         'preferredName': 'Build Rotated Masters...',
         'shortKey' : '',
     },

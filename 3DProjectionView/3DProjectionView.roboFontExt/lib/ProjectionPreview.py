@@ -22,18 +22,20 @@ class ProjectionPreviewWindow:
         self.tempPath = tempfile.mkstemp()[1]
         self.tempHTMLPath = self.tempPath + ".html"
                 
-        self.w = vanilla.Window((620, 720), "3D Projection Preview", autosaveName="ProjectionPreview")
+        self.w = vanilla.Window((620, 740), "3D Projection Preview", autosaveName="ProjectionPreview")
         self.w.bind("resize", self.windowResizedCallback)
         
-        topHeight = 45
+        topHeight = 65
         self.w.refreshButton = vanilla.SquareButton((10, 10, 130, 25), "Reload glyph data", callback=self.refreshPreviewCallback, sizeStyle="small")
     
         x = 150
         self.w.zoomScaleChoice = vanilla.PopUpButton((x, 10, 70, 25), ["50%", "75%", "100%", "150%"], sizeStyle="small", callback=self.refreshPreviewCallback)
         self.w.zoomScaleChoice.set(2)
-        self.w.strokeWidth = vanilla.EditText((x+100, 10, 40, 25), "90")
+        self.w.strokeWidth = vanilla.EditText((x+90, 10, 40, 25), "90")
         self.w.strokeWidth.enable(False)
-        self.w.doStrokeBox = vanilla.CheckBox((x+150, 10, 100, 25), "Stroke", sizeStyle="small", value=False, callback=self.refreshPreviewCallback)
+        self.w.doStrokeBox = vanilla.CheckBox((x+140, 10, 100, 25), "Stroke", sizeStyle="small", value=False, callback=self.refreshPreviewCallback)
+        
+        self.w.note = vanilla.TextBox((10, 43, -10, 25), "Note: Requires an internet connection for the Zdog library to load, http://www.zzz.dog/", sizeStyle="small")
         
         # Web view
         self.w.webView = WebView.alloc().initWithFrame_(((0, 0), (500, 500)))
