@@ -150,25 +150,30 @@ def drawZdogGlyph(g, pointData=None, offset=None, stroke=20, doStroke=True, zoom
                 # offset = (0, 0)
             
             
-            for c in g.contours:
+            for cIdx, c in enumerate(g.contours):
         
                 # Set the start point, either the first point if the contour is open, or the last point if the contour is closed
                 if c.open:
                     prevPt = c.segments[0].points[0]
                 else: prevPt = c.segments[-1].points[-1]
+                
+                if cIdx == 0 or doStroke:
+                    
+                    # New shape for this segment
+                    js += "\n\nnew Zdog.Shape({\n  addTo: illo,\n  path: ["
+                
+                prevLoc = getLoc(pointData, prevPt)
+                js += "\n    { x: %s, y: %s , z: %s }," % (prevLoc[0], prevLoc[1], prevLoc[2])
         
                 # Draw the contours
                 for sIdx, s in enumerate(c.segments):
-            
-                    # New shape for this segment
-                    js += "\n\nnew Zdog.Shape({\n  addTo: illo,\n  path: ["
             
                     if len(s.points) == 1:
                         #pts = (prevPt.x, prevPt.y, getZ(pointData, prevPt), s.points[0].x, s.points[0].y, getZ(pointData, s.points[0]))
                         prevLoc = getLoc(pointData, prevPt)
                         ptLoc = getLoc(pointData, s.points[0])
-                        pts = (prevLoc[0], prevLoc[1], prevLoc[2], ptLoc[0], ptLoc[1], ptLoc[2])
-                        js += "\n    { x: %s, y: %s , z: %s },\n    { x: %s, y: %s , z: %s },\n  ]," % pts
+                        pts = (ptLoc[0], ptLoc[1], ptLoc[2])
+                        js += "\n    { x: %s, y: %s , z: %s }," % pts
                         prevPt = s.points[0]
             
                     else:
@@ -178,14 +183,20 @@ def drawZdogGlyph(g, pointData=None, offset=None, stroke=20, doStroke=True, zoom
                             ptLoc = getLoc(pointData, pt)
                             pts += [ptLoc[0], ptLoc[1], ptLoc[2]]
                         prevLoc = getLoc(pointData, prevPt)
-                        js += "\n    { x: %s, y: %s , z: %s }," % (prevLoc[0], prevLoc[1], prevLoc[2])
-                        js += "\n    { bezier: [{ x:  %s, y: %s, z: %s}, { x:  %s, y:  %s, z: %s }, { x:  %s, y:  %s, z: %s },]},\n  ]," % tuple(pts)
+                        # js += "\n    { x: %s, y: %s , z: %s }," % (prevLoc[0], prevLoc[1], prevLoc[2])
+                        js += "\n    { bezier: [{ x:  %s, y: %s, z: %s}, { x:  %s, y:  %s, z: %s }, { x:  %s, y:  %s, z: %s },]}," % tuple(pts)
                         prevPt = s.points[-1]
-        
+                
+                if cIdx == len(g.contours)-1 or doStroke:
+                    
+                    js += "\n  ],"
+    
                     if not offset == (0, 0):
                         js += "\n  translate: { x: %s, y: %s }," % offset
-                    js += "\n  closed: false,"
-            
+                    if c.open:
+                        js += "\n  closed: false,"
+                    else: js += "\n  closed: true,"
+        
                     if s.selected:
                         color = "red"
                     else: color = "black"

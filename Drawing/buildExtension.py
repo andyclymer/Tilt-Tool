@@ -13,7 +13,7 @@ resourcesPath = os.path.join(basePath, "resources")
 B = ExtensionBundle()
 
 B.name = "3D Projection View"
-B.version = "0.8"
+B.version = "0.9"
 B.developer = "Andy Clymer"
 B.developerURL = 'http://www.andyclymer.com/'
 
@@ -22,17 +22,22 @@ B.launchAtStartUp = False
 B.addToMenu = [
     {
         'path' : 'ProjectionViewControl.py',
-        'preferredName': 'Enable Projection View Control',
+        'preferredName': 'Enable 3D Projection View Control',
         'shortKey' : '',
     },
     {
         'path' : 'ProjectionPreview.py',
-        'preferredName': 'Projection Preview...',
+        'preferredName': '3D Projection Preview...',
         'shortKey' : '',
     },
     {
-        'path' : 'GlyphPreview.py',
-        'preferredName': 'DesignSpace Preview...',
+        'path' : 'ProjectionPreview.py',
+        'preferredName': 'Build Rotated Masters...',
+        'shortKey' : '',
+    },
+    {
+        'path' : 'DesignSpacePreview.py',
+        'preferredName': 'Rotated DesignSpace Preview...',
         'shortKey' : '',
     }]
     

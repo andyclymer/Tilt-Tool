@@ -83,7 +83,7 @@ def getScreenInfo():
         if thisScreenDescription["NSScreenNumber"] == mainScreenDescription["NSScreenNumber"]:
             thisScreenInfo["name"] = "Main screen (%s × %s)" % (int(size[0]), int(size[1]))
             thisScreenInfo["isMain"] = True
-        else: thisScreenInfo["name"] = "Screen (%s × %s)" % (int(size[0]), int(size[1]))
+        else: thisScreenInfo["name"] = "Other screen (%s × %s)" % (int(size[0]), int(size[1]))
         screenInfo.append(thisScreenInfo)
         
     return screenInfo
@@ -107,30 +107,43 @@ class PreviewWindow(object):
         
         step = 10
         
-        self.w = vanilla.Window((340, 500), minSize=(340, 500), autosaveName="GlyphPreview")
+        self.w = vanilla.Window((660, 600), "Rotated DesignSpace Preview", minSize=(320, 500), autosaveName="Rotated DesignSpace Preview")
         
-        self.w.openButton = vanilla.SquareButton((10, step, 120, 25), "Open Designspace", sizeStyle="small", callback=self.openDesignSpace)
-        self.w.reloadButton = vanilla.SquareButton((10, step+35, 120, 25), "Reload Designspace", sizeStyle="small", callback=self.reloadDesignSpace)
-        self.w.saveButton = vanilla.SquareButton((10, step+70, 40, 25), "Save", sizeStyle="small", callback=self.saveSources)
+        self.w.openButton = vanilla.SquareButton((10, step, 150, 25), "Open Designspace", sizeStyle="small", callback=self.openDesignSpace)
+        self.w.reloadButton = vanilla.SquareButton((10, step+35, 150, 25), "Refresh Designspace", sizeStyle="small", callback=self.reloadDesignSpace)
+        #self.w.saveButton = vanilla.SquareButton((10, step+70, 40, 25), "Save", sizeStyle="small", callback=self.saveSources)
+        self.w.screenChoice = vanilla.PopUpButton((10, step+65, 150, 25), self.screenNames, sizeStyle="small", callback=self.positionSourceWindows)
         
-        self.w.screenChoice = vanilla.PopUpButton((140, step, 190, 25), self.screenNames, sizeStyle="small", callback=self.positionSourceWindows)
-        self.w.glyphName = vanilla.EditText((140, step+35, 50, 25), "", callback=self.glyphChanged)
-        self.w.fillBox = vanilla.CheckBox((200, step+35, 100, 25), "Fill Preview", callback=self.settingsChanged)
+        self.w.vr1 = vanilla.VerticalLine((170, 10, 1, 100))
         
-        mid = 370
-        self.w.setRatioButton = vanilla.SquareButton((mid, step, 120, 25), "Set Point Ratio", sizeStyle="small", callback=self.setPointRatio)
+        self.w.glyphNameTitle = vanilla.TextBox((190, step+5, 100, 25), "Glyph name:")
+        self.w.glyphName = vanilla.EditText((190, step+35, 100, 25), "", callback=self.glyphChanged)
+        self.w.fillBox = vanilla.CheckBox((190, step+65, 100, 25), "Fill Preview", callback=self.settingsChanged)
+        
+        self.w.vr2 = vanilla.VerticalLine((310, 10, 1, 100))
+        
+        
+        mid = 330
+        
+        self.w.selectedPointTitle = vanilla.TextBox((mid, step+5, 100, 25), "Selected BCP:")
+        
+        self.w.setRatioButton = vanilla.SquareButton((mid, step+35, 175, 25), "Match “default” master ratio...", sizeStyle="small", callback=self.setPointRatio)
         self.w.setRatioButton.id = "ratio"
-        self.w.setRatioButton2 = vanilla.SquareButton((mid+119, step, 80, 25), "(Anchor)", sizeStyle="small", callback=self.setPointRatio)
+        self.w.setRatioButton2 = vanilla.SquareButton((mid+174, step+35, 135, 25), "...move off-curves only", sizeStyle="small", callback=self.setPointRatio)
         self.w.setRatioButton2.id = "ratioLeaveAnchor"
-        self.w.magButton0 = vanilla.SquareButton((mid, step+35, 51, 25), "-20", sizeStyle="small", callback=self.pointMagCallback)
+        mid = 439
+        self.w.magTitle = vanilla.TextBox((mid-100, step+65, 100, 25), "Scale off-curves:", sizeStyle="small")
+        self.w.magButton0 = vanilla.SquareButton((mid, step+59, 51, 25), "-20", sizeStyle="small", callback=self.pointMagCallback)
         self.w.magButton0.value = 0.8
-        self.w.magButton1 = vanilla.SquareButton((mid+50, step+35, 51, 25), "-5", sizeStyle="small", callback=self.pointMagCallback)
+        self.w.magButton1 = vanilla.SquareButton((mid+50, step+59, 51, 25), "-5", sizeStyle="small", callback=self.pointMagCallback)
         self.w.magButton1.value = 0.95
-        self.w.magButton2 = vanilla.SquareButton((mid+100, step+35, 51, 25), "+5", sizeStyle="small", callback=self.pointMagCallback)
+        self.w.magButton2 = vanilla.SquareButton((mid+100, step+59, 51, 25), "+5", sizeStyle="small", callback=self.pointMagCallback)
         self.w.magButton2.value = 1.05
-        self.w.magButton3 = vanilla.SquareButton((mid+150, step+35, 50, 25), "+20", sizeStyle="small", callback=self.pointMagCallback)
+        self.w.magButton3 = vanilla.SquareButton((mid+150, step+59, 50, 25), "+20", sizeStyle="small", callback=self.pointMagCallback)
         self.w.magButton3.value = 1.2
         #self.w.closeButton = vanilla.SquareButton((550, step+35, 40, 25), "Close", sizeStyle="small", callback=self.closeSourceWindows)
+        
+        self.w.hr1 = vanilla.HorizontalLine((10, 110, -10, 1))
         
         step += 110
         

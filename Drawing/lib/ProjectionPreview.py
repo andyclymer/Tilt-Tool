@@ -7,13 +7,6 @@ from mojo.extensions import getExtensionDefault, setExtensionDefault, ExtensionB
 from ZdogDraw import drawZdogGlyph
 
 
-"""
-
-To Do:
-   Don't just read the data out of the lib and the glyph points, because it might be rotated.
-   Work with a notification to call for the current glyph data?
-
-"""
 
 class ProjectionPreviewWindow:
     
@@ -29,24 +22,22 @@ class ProjectionPreviewWindow:
         self.tempPath = tempfile.mkstemp()[1]
         self.tempHTMLPath = self.tempPath + ".html"
                 
-        self.w = vanilla.Window((600, 350), minSize=(600,350), autosaveName="KernProof")
+        self.w = vanilla.Window((620, 720), "3D Projection Preview", autosaveName="ProjectionPreview")
         self.w.bind("resize", self.windowResizedCallback)
         
+        topHeight = 45
+        self.w.refreshButton = vanilla.SquareButton((10, 10, 130, 25), "Reload glyph data", callback=self.refreshPreviewCallback, sizeStyle="small")
     
-        topHeight = 75
-        self.w.refreshButton = vanilla.SquareButton((10, 10, 85, 25), "Refresh", callback=self.refreshPreviewCallback)
-    
-        x = 110
-        self.w.zoomScale = vanilla.EditText((x, 10, 40, 25), "0.5")
-        self.w.zoomLabel = vanilla.TextBox((x+50, 15, 50, 25), "Zoom", sizeStyle="small")
-        self.w.strokeWidth = vanilla.EditText((x, 40, 40, 25), "90")
-        self.w.doStrokeBox = vanilla.CheckBox((x+50, 40, 100, 25), "Stroke", sizeStyle="small", value=True)
+        x = 150
+        self.w.zoomScaleChoice = vanilla.PopUpButton((x, 10, 70, 25), ["50%", "75%", "100%", "150%"], sizeStyle="small", callback=self.refreshPreviewCallback)
+        self.w.zoomScaleChoice.set(2)
+        self.w.strokeWidth = vanilla.EditText((x+100, 10, 40, 25), "90")
+        self.w.strokeWidth.enable(False)
+        self.w.doStrokeBox = vanilla.CheckBox((x+150, 10, 100, 25), "Stroke", sizeStyle="small", value=False, callback=self.refreshPreviewCallback)
         
         # Web view
         self.w.webView = WebView.alloc().initWithFrame_(((0, 0), (500, 500)))
-        #self.w.webView.preferences().setUserStyleSheetEnabled_(True)
-        #self.w.webView.preferences().setUserStyleSheetLocation_(NSURL.fileURLWithPath_(self.tempCSSPath))
-        self.w.scroll = vanilla.ScrollView((0, topHeight, -0, -0), self.w.webView, hasHorizontalScroller=False, hasVerticalScroller=False)
+        self.w.scroll = vanilla.ScrollView((10, topHeight, -10, -10), self.w.webView, hasHorizontalScroller=False, hasVerticalScroller=False)
     
         self.w.open()
         self.refreshPreviewCallback(None)
@@ -58,6 +49,7 @@ class ProjectionPreviewWindow:
         self.w.webView.setFrame_(sv.frame())
     
     def refreshPreviewCallback(self, sender):
+        self.w.strokeWidth.enable(self.w.doStrokeBox.get())
         self.windowResizedCallback(None)
         self.glyph = CurrentGlyph()
         self.libReadGlyph()
@@ -70,9 +62,10 @@ class ProjectionPreviewWindow:
             stroke = int(self.w.strokeWidth.get())
         except: stroke=40
         doStroke = self.w.doStrokeBox.get()
-        r = drawZdogGlyph(self.glyph, pointData=self.pointData, stroke=stroke, doStroke=doStroke, zoom=self.w.zoomScale.get(), destPath=self.tempHTMLPath)
+        actualZoomSettings = [0.25, 0.33, 0.5, 1]
+        zoomChoice = self.w.zoomScaleChoice.get()
+        r = drawZdogGlyph(self.glyph, pointData=self.pointData, stroke=stroke, doStroke=doStroke, zoom=actualZoomSettings[zoomChoice], destPath=self.tempHTMLPath)
 
-    # @@@ Copied from ProjectionViewControl.py
     def libReadGlyph(self):
         if self.debug: print("libReadGlyph")
         # Read the zPosition data out of the glyph lib, but retain a dictionary of x,y,z in self.pointData for easy rotation

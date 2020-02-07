@@ -8,7 +8,7 @@
 			<key>path</key>
 			<string>ProjectionViewControl.py</string>
 			<key>preferredName</key>
-			<string>Enable Projection View Control</string>
+			<string>Enable 3D Projection View Control</string>
 			<key>shortKey</key>
 			<string></string>
 		</dict>
@@ -16,15 +16,23 @@
 			<key>path</key>
 			<string>ProjectionPreview.py</string>
 			<key>preferredName</key>
-			<string>Projection Preview...</string>
+			<string>3D Projection Preview...</string>
 			<key>shortKey</key>
 			<string></string>
 		</dict>
 		<dict>
 			<key>path</key>
-			<string>GlyphPreview.py</string>
+			<string>ProjectionPreview.py</string>
 			<key>preferredName</key>
-			<string>DesignSpace Preview...</string>
+			<string>Build Rotated Masters...</string>
+			<key>shortKey</key>
+			<string></string>
+		</dict>
+		<dict>
+			<key>path</key>
+			<string>DesignSpacePreview.py</string>
+			<key>preferredName</key>
+			<string>Rotated DesignSpace Preview...</string>
 			<key>shortKey</key>
 			<string></string>
 		</dict>
@@ -46,8 +54,8 @@
 	<key>requiresVersionMinor</key>
 	<string>3</string>
 	<key>timeStamp</key>
-	<real>1580848597.555994</real>
+	<real>1581104479.1884151</real>
 	<key>version</key>
-	<string>0.8</string>
+	<string>0.9</string>
 </dict>
 </plist>
