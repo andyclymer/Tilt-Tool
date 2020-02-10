@@ -81,6 +81,7 @@ class ProjectionViewControl(object):
         # Attach the view to the current glyph window
         w = CurrentGlyphWindow()
         w.addGlyphEditorSubview(self.view)
+        self.updateButtons()
             
     def observerDraw(self, notification):
         # Show the controls

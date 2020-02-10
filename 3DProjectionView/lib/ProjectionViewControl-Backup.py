@@ -53,9 +53,8 @@ class ProjectionViewControl(object):
         self.currentView = "front"
         self.enableProjection = False # Enable the buttons and save point data to the lib?
         
-        # Window
-        self.view = vanilla.FloatingWindow((95, 95))
-        #self.view = CanvasGroup((30, 30, 95, 95), delegate=self)
+        # Window controls
+        self.view = CanvasGroup((30, 30, 95, 95), delegate=self)
         self.view.controlGroup = vanilla.Box((0, 0, 100, 100))  
         self.view.controlGroup.buttonFront = vanilla.SquareButton((40, 5, 40, 40), "●", callback=self.rotateFront)
         self.view.controlGroup.buttonFront.enable(False)
@@ -64,8 +63,11 @@ class ProjectionViewControl(object):
         self.view.controlGroup.buttonTop = vanilla.SquareButton((40, 50, 40, 30), "◓", callback=self.rotateTop)
         self.view.controlGroup.buttonTop.enable(False)
         self.view.controlGroup.enableBox = vanilla.CheckBox((13, -38, 25, 25), "", callback=self.enableDisableCallback)
-        self.view.bind("close", self.windowClosed)
-        self.view.open()
+        
+        addObserver(self, "observerGlyphWindowWillOpen", "glyphWindowWillOpen")
+        addObserver(self, "observerGlyphWindowWillOpen", "viewDidChangeGlyph")
+        addObserver(self, "observerDraw", "draw")
+        addObserver(self, "observerDrawPreview", "drawPreview")
         
         addObserver(self, "glyphWillChange", "viewWillChangeGlyph")
         addObserver(self, "glyphDidChange", "viewDidChangeGlyph")
@@ -74,13 +76,25 @@ class ProjectionViewControl(object):
         addObserver(self, "fontDidSave", "fontDidSave")
         addObserver(self, "mouseUp", "mouseUp")
         
-            
-    # UI Callbacks
-
-    def windowClosed(self, sender):
-        # 3D widget window closed, rotate back to the front
-        self.rotate("front")
         
+    def observerGlyphWindowWillOpen(self, notification):
+        # Attach the view to the current glyph window
+        w = CurrentGlyphWindow()
+        w.addGlyphEditorSubview(self.view)
+        self.updateButtons()
+            
+    def observerDraw(self, notification):
+        # Show the controls
+        if self.view:
+            self.view.show(True)
+        
+    def observerDrawPreview(self, notification):
+        # Hide the controls in preview mode
+        if self.view:
+            self.view.show(False)
+    
+    
+    # UI Callbacks
     
     def enableDisableCallback(self, sender):
         # Enable/disable the projection view
