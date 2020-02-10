@@ -22,25 +22,39 @@ class ProjectionPreviewWindow:
         self.tempPath = tempfile.mkstemp()[1]
         self.tempHTMLPath = self.tempPath + ".html"
                 
-        self.w = vanilla.Window((620, 740), "3D Projection Preview", autosaveName="ProjectionPreview")
+        self.w = vanilla.Window((620, 750), "3D Projection View", autosaveName="ProjectionPreview")
         self.w.bind("resize", self.windowResizedCallback)
         
-        topHeight = 65
-        self.w.refreshButton = vanilla.SquareButton((10, 10, 130, 25), "Reload glyph data", callback=self.refreshPreviewCallback, sizeStyle="small")
-    
-        x = 150
-        self.w.zoomScaleChoice = vanilla.PopUpButton((x, 10, 70, 25), ["50%", "75%", "100%", "150%"], sizeStyle="small", callback=self.refreshPreviewCallback)
-        self.w.zoomScaleChoice.set(2)
-        self.w.strokeWidth = vanilla.EditText((x+90, 10, 40, 25), "90")
-        self.w.strokeWidth.enable(False)
-        self.w.doStrokeBox = vanilla.CheckBox((x+140, 10, 100, 25), "Stroke", sizeStyle="small", value=False, callback=self.refreshPreviewCallback)
+        topHeight = 120
         
-        self.w.note = vanilla.TextBox((10, 43, -10, 25), "Note: Requires an internet connection for the Zdog library to load, http://www.zzz.dog/", sizeStyle="small")
+        self.w.controlGroup = vanilla.Box((10, 10, 100, 100))  
+        self.w.controlGroup.buttonFront = vanilla.SquareButton((40, 5, 40, 40), "●", callback=None)#self.rotateFront)
+        self.w.controlGroup.buttonFront.enable(False)
+        self.w.controlGroup.buttonSide = vanilla.SquareButton((5, 5, 30, 40), "◑", callback=None)#self.rotateSide)
+        self.w.controlGroup.buttonSide.enable(False)
+        self.w.controlGroup.buttonTop = vanilla.SquareButton((40, 50, 40, 30), "◓", callback=None)#self.rotateTop)
+        self.w.controlGroup.buttonTop.enable(False)
+        self.w.controlGroup.enableBox = vanilla.CheckBox((13, -38, 25, 25), "", callback=None)#self.enableDisableCallback)
+
+        x = 130
+        self.w.vRule = vanilla.VerticalLine((x-10, 10, 1, 120))
+        self.w.refreshButton = vanilla.SquareButton((x, 10, 130, 25), "Refresh preview", callback=self.refreshPreviewCallback, sizeStyle="small")
+    
+        self.w.zoomScaleChoice = vanilla.PopUpButton((x, 39, 70, 25), ["50%", "75%", "100%", "150%"], sizeStyle="small", callback=self.refreshPreviewCallback)
+        self.w.zoomScaleChoice.set(2)
+        
+        self.w.doStrokeBox = vanilla.CheckBox((x, 64, 100, 25), "Stroke", sizeStyle="small", value=False, callback=self.refreshPreviewCallback)
+        self.w.strokeWidth = vanilla.EditText((x+60, 67, 40, 20), "90", sizeStyle="small")
+        self.w.strokeWidth.enable(False)
+        
+        self.w.note = vanilla.TextBox((x, 95, -10, 25), "Note: 3D preview requires an internet connection for the Zdog library, http://www.zzz.dog/", sizeStyle="small")
         
         # Web view
         self.w.webView = WebView.alloc().initWithFrame_(((0, 0), (500, 500)))
         self.w.scroll = vanilla.ScrollView((10, topHeight, -10, -10), self.w.webView, hasHorizontalScroller=False, hasVerticalScroller=False)
-    
+        
+        #self.w.bind("close", self.windowClosed)
+            
         self.w.open()
         self.refreshPreviewCallback(None)
         
