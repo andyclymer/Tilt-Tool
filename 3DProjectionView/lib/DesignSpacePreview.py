@@ -110,7 +110,7 @@ class PreviewWindow(object):
         self.w = vanilla.Window((660, 600), "Rotated DesignSpace Preview", minSize=(320, 500), autosaveName="Rotated DesignSpace Preview")
         
         self.w.openButton = vanilla.SquareButton((10, step, 150, 25), "Open Designspace", sizeStyle="small", callback=self.openDesignSpace)
-        self.w.reloadButton = vanilla.SquareButton((10, step+35, 150, 25), "Refresh Designspace", sizeStyle="small", callback=self.reloadDesignSpace)
+        self.w.reloadButton = vanilla.SquareButton((10, step+35, 150, 25), "Update/Reload Fonts", sizeStyle="small", callback=self.reloadDesignSpace)
         #self.w.saveButton = vanilla.SquareButton((10, step+70, 40, 25), "Save", sizeStyle="small", callback=self.saveSources)
         self.w.screenChoice = vanilla.PopUpButton((10, step+65, 150, 25), self.screenNames, sizeStyle="small", callback=self.positionSourceWindows)
         
@@ -132,14 +132,14 @@ class PreviewWindow(object):
         self.w.setRatioButton2 = vanilla.SquareButton((mid+174, step+35, 135, 25), "...move off-curves only", sizeStyle="small", callback=self.setPointRatio)
         self.w.setRatioButton2.id = "ratioLeaveAnchor"
         mid = 439
-        self.w.magTitle = vanilla.TextBox((mid-100, step+65, 100, 25), "Scale off-curves:", sizeStyle="small")
-        self.w.magButton0 = vanilla.SquareButton((mid, step+59, 51, 25), "-20", sizeStyle="small", callback=self.pointMagCallback)
+        self.w.magTitle = vanilla.TextBox((mid-100, step+70, 100, 25), "Scale off-curves:", sizeStyle="small")
+        self.w.magButton0 = vanilla.SquareButton((mid, step+64, 51, 25), "-20", sizeStyle="small", callback=self.pointMagCallback)
         self.w.magButton0.value = 0.8
-        self.w.magButton1 = vanilla.SquareButton((mid+50, step+59, 51, 25), "-5", sizeStyle="small", callback=self.pointMagCallback)
+        self.w.magButton1 = vanilla.SquareButton((mid+50, step+64, 51, 25), "-5", sizeStyle="small", callback=self.pointMagCallback)
         self.w.magButton1.value = 0.95
-        self.w.magButton2 = vanilla.SquareButton((mid+100, step+59, 51, 25), "+5", sizeStyle="small", callback=self.pointMagCallback)
+        self.w.magButton2 = vanilla.SquareButton((mid+100, step+64, 51, 25), "+5", sizeStyle="small", callback=self.pointMagCallback)
         self.w.magButton2.value = 1.05
-        self.w.magButton3 = vanilla.SquareButton((mid+150, step+59, 50, 25), "+20", sizeStyle="small", callback=self.pointMagCallback)
+        self.w.magButton3 = vanilla.SquareButton((mid+150, step+64, 50, 25), "+20", sizeStyle="small", callback=self.pointMagCallback)
         self.w.magButton3.value = 1.2
         #self.w.closeButton = vanilla.SquareButton((550, step+35, 40, 25), "Close", sizeStyle="small", callback=self.closeSourceWindows)
         
@@ -248,8 +248,9 @@ class PreviewWindow(object):
             for vIdx in range(len(positionNames)):
                 for hIdx in range(len(positionNames[vIdx])):
                     fileName = positionNames[vIdx][hIdx]
-                    if "%s.ufo" % fileName in w.document.font.path:
-                        w.document.font.save()
+                    if w.document.font.path:
+                        if "%s.ufo" % fileName in w.document.font.path:
+                            w.document.font.save()
         
         
     def closeSourceWindows(self, sender=None):
@@ -270,8 +271,9 @@ class PreviewWindow(object):
             for vIdx in range(len(positionNames)):
                 for hIdx in range(len(positionNames[vIdx])):
                     fileName = positionNames[vIdx][hIdx]
-                    if "%s.ufo" % fileName in w.document.font.path:
-                        docs.append(w.document)
+                    if w.document.font.path:
+                        if "%s.ufo" % fileName in w.document.font.path:
+                            docs.append(w.document)
         for doc in docs:
             doc.close()
 
