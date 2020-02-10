@@ -1,21 +1,20 @@
 from mojo.events import addObserver, removeObserver
 from mojo.canvas import CanvasGroup
+from mojo.UI import CurrentGlyphWindow
 import vanilla
 import math
 import random
 import copy
 
 
-"""
-TO DO:
-
-    Only have one instance of this running, and don't rebuild the widget on each new window opening.
-    The state of the checkbox needs to remain on/off during the session, keep it as one object
-
-    === Make a separate object for the UI, and then just attach that to the window whenever it's opened
 
 """
+To Do:
+    
+    - Try to switch back to point IDs instead of names
+    - Docs and notes in the code
 
+"""
 
 
 def makeUniqueName(length=None):
@@ -39,16 +38,9 @@ def interpolate(f, x0, x1):
 
 class ProjectionViewControl(object):
     
-    """
-    - glyph lib stores the "z" location under each point name
-    - self.pointData holds a dict of "x,y,z" for each point name
-    """
-
     def __init__(self):
         
         self.debug = False
-        
-        self.view = None
         
         # Glyph and font data
         self.glyph = None
@@ -61,7 +53,19 @@ class ProjectionViewControl(object):
         self.currentView = "front"
         self.enableProjection = False # Enable the buttons and save point data to the lib?
         
+        # Window controls
+        self.view = CanvasGroup((30, 30, 95, 95), delegate=self)
+        self.view.controlGroup = vanilla.Box((0, 0, 100, 100))  
+        self.view.controlGroup.buttonFront = vanilla.SquareButton((40, 5, 40, 40), "●", callback=self.rotateFront)
+        self.view.controlGroup.buttonFront.enable(False)
+        self.view.controlGroup.buttonSide = vanilla.SquareButton((5, 5, 30, 40), "◑", callback=self.rotateSide)
+        self.view.controlGroup.buttonSide.enable(False)
+        self.view.controlGroup.buttonTop = vanilla.SquareButton((40, 50, 40, 30), "◓", callback=self.rotateTop)
+        self.view.controlGroup.buttonTop.enable(False)
+        self.view.controlGroup.enableBox = vanilla.CheckBox((13, -38, 25, 25), "", callback=self.enableDisableCallback)
+        
         addObserver(self, "observerGlyphWindowWillOpen", "glyphWindowWillOpen")
+        addObserver(self, "observerGlyphWindowWillOpen", "viewDidChangeGlyph")
         addObserver(self, "observerDraw", "draw")
         addObserver(self, "observerDrawPreview", "drawPreview")
         
@@ -74,19 +78,9 @@ class ProjectionViewControl(object):
         
         
     def observerGlyphWindowWillOpen(self, notification):
-        self.window = notification["window"]
-        # Window controls
-        self.view = CanvasGroup((30, 30, 95, 95), delegate=self)
-        self.view.controlGroup = vanilla.Box((0, 0, 100, 100))
-        self.view.controlGroup.buttonFront = vanilla.SquareButton((40, 5, 40, 40), "●", callback=self.rotateFront)
-        self.view.controlGroup.buttonFront.enable(False)
-        self.view.controlGroup.buttonSide = vanilla.SquareButton((5, 5, 30, 40), "◑", callback=self.rotateSide)
-        self.view.controlGroup.buttonSide.enable(False)
-        self.view.controlGroup.buttonTop = vanilla.SquareButton((40, 50, 40, 30), "◓", callback=self.rotateTop)
-        self.view.controlGroup.buttonTop.enable(False)
-        self.view.controlGroup.enableBox = vanilla.CheckBox((13, -38, 25, 25), "", callback=self.enableDisableCallback)
-        # add the view to the GlyphEditor window
-        self.window.addGlyphEditorSubview(self.view)
+        # Attach the view to the current glyph window
+        w = CurrentGlyphWindow()
+        w.addGlyphEditorSubview(self.view)
             
     def observerDraw(self, notification):
         # Show the controls
@@ -97,9 +91,9 @@ class ProjectionViewControl(object):
         # Hide the controls in preview mode
         if self.view:
             self.view.show(False)
-
     
-    # Window Callbacks
+    
+    # UI Callbacks
     
     def enableDisableCallback(self, sender):
         # Enable/disable the projection view
@@ -213,7 +207,7 @@ class ProjectionViewControl(object):
         
     def _cleanXYZPointData(self):
         # Before most operations, a check and a fix can be done on the pointData.
-        # 1) If multiple points share the same ID, assign new IDs and copy pointData entries for the new point IDs
+        # If multiple points share the same ID, assign new IDs and copy pointData entries for the new point IDs (happens when copying/pasting contours)
         if not self.glyph == None:
             allNames = []
             didChange = False
@@ -234,7 +228,6 @@ class ProjectionViewControl(object):
             if didChange:
                 self.libWriteGlyph()
                 self.glyph.changed()
-                
                 
     def _updateXYZPointData(self):
         if self.debug: print("_updateXYZPointData (glyph drawing changed)")
@@ -258,19 +251,14 @@ class ProjectionViewControl(object):
                                 self.pointData[ident] = self.pointData[oldIdent].copy()
                         if not ident in self.pointData:
                             # Make new point data for this point
-                            nextIdx = ptIdx + 1
-                            if nextIdx > len(c.points)-1:
-                                nextIdx = 0
+                            # Copy the data on the hidden axis from the previous point
                             prevIdent = getSetUniqueName(c.points[ptIdx-1])
-                            nextIdent = getSetUniqueName(c.points[nextIdx])
-                            # @@@ Find this segment, split the old curve in 3D
-                            # @@@ To find the segment, find the next and prev onCurve
-                            if prevIdent in self.pointData and nextIdent in self.pointData:
-                                # Interpolate the prev/next values (it's better than nothing)
+                            # Temporarily copy x,y,z, the non-hidden axes will be updated in just a sec
+                            if prevIdent in self.pointData:
                                 tempData = dict(
-                                    x=interpolate(0.5, self.pointData[prevIdent]["x"], self.pointData[nextIdent]["x"]),
-                                    y=interpolate(0.5, self.pointData[prevIdent]["y"], self.pointData[nextIdent]["y"]),
-                                    z=interpolate(0.5, self.pointData[prevIdent]["z"], self.pointData[nextIdent]["z"]))
+                                    x=self.pointData[prevIdent]["x"],
+                                    y=self.pointData[prevIdent]["y"],
+                                    z=self.pointData[prevIdent]["z"])
                             else: tempData = dict(x=0, y=0, z=0)
                             self.pointData[ident] = tempData
                         # Set the point data, taking into account the current viewing angle
@@ -354,7 +342,6 @@ class ProjectionViewControl(object):
             if not glyphCurrentView == self.currentView:
                 # Don't write, because the lib thinks it should be in a different view
                 print("VIEW PROBLEM when writing, glyph", glyphCurentView, "current", self.currentView)
-                # @@@ Rotate back to the front?
         # Write the point data back to the glyph lib
         if self.enableProjection:
             if not self.glyph == None:
