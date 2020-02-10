@@ -222,12 +222,13 @@ class PreviewWindow(object):
             for vIdx in range(len(positionNames)):
                 for hIdx in range(len(positionNames[vIdx])):
                     fileName = positionNames[vIdx][hIdx]
-                    if "%s.ufo" % fileName in w.document.font.path:
-                        winPosSize = (
-                            origin[0] + hIdx*winSize[0],
-                            origin[1] + vIdx*winSize[1] + menubarSize, 
-                            winSize[0] - 2, winSize[1] - menubarSize - 2)
-                        w.window().setPosSize(winPosSize)
+                    if w.document.font.path:
+                        if "%s.ufo" % fileName in w.document.font.path:
+                            winPosSize = (
+                                origin[0] + hIdx*winSize[0],
+                                origin[1] + vIdx*winSize[1] + menubarSize, 
+                                winSize[0] - 2, winSize[1] - menubarSize - 2)
+                            w.window().setPosSize(winPosSize)
     
     def saveSources(self, sender=None):
         # Find the font objects and save them, for all open sources
