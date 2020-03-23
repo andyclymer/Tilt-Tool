@@ -13,7 +13,7 @@ resourcesPath = os.path.join(basePath, "resources")
 B = ExtensionBundle()
 
 B.name = "3D Projection View"
-B.version = "0.11"
+B.version = "0.12"
 B.developer = "Andy Clymer"
 B.developerURL = 'http://www.andyclymer.com/'
 
@@ -45,6 +45,6 @@ B.requiresVersionMajor = '3'
 B.requiresVersionMinor = '3'
 B.infoDictionary["html"] = True
 
-B.save(extensionPath, libPath=libPath, htmlPath=htmlPath, resourcesPath=resourcesPath, pycOnly=False)
+B.save(extensionPath, libPath=libPath, htmlPath=htmlPath, resourcesPath=None, pycOnly=False)
 
 print("Done")

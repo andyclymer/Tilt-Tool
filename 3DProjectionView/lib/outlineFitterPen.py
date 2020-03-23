@@ -19,6 +19,30 @@ from defcon import Glyph
 from math import sqrt, cos, sin, acos, asin, degrees, radians, pi
 
 
+"""
+The MIT License (MIT)
+
+Copyright (c) 2016 Frederik Berlaen
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+
 
 def roundFloat(f):
     error = 1000000.
@@ -458,29 +482,6 @@ class OutlineFitterPen(BasePen):
             dir0 = -1
         if dot1 < 0:
             dir1 = -1
-
-            
-        # print(dot0, dot1)
-            
-        """
-        # If the onCurves are closer to each other than 2x the thickness, reverse the direction of the inner curve
-        angle = self.prevPoint.angle(p3)
-        distance = self.prevPoint.distance(p3)
-        thickness = self.getThickness(angle)
-        reverseInner = False
-        #print(distance, thickness)
-        if distance < thickness * 2:
-            reverseInner = True
-        # @@@ Do this differently, it's not helping
-            
-            
-        Two bugs (maybe related)
-        
-        - When the on-curves are closer to each other than 2x the offset, need to reverse the direction on the inner handles
-        - When the BCPs are in the same direction and are on top of each other, the curve asymmetrically sets the direction (wrong)
-        
-        """
-
             
         # Flatten the original curve
         flatPoints = flattenCurve(originalPoints)

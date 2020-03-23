@@ -295,7 +295,7 @@ def buildDesignSpace(
 
     # Open the master UFO
     if type(masterFont) == str:
-        masterFont = OpenFont(masterPath, showInterface=False)
+        masterFont = OpenFont(masterFont, showInterface=False)
     
     # Get the master file name, if it's saved
     basePath = None
