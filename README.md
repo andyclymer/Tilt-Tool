@@ -7,7 +7,7 @@ The *3D Projection View* RoboFont Extension enables you to add depth to a drawin
 
 The workflow for drawing in 3D is broken out into four different functions —
 
-### Enable 3D Projection View Control
+### “Enable 3D Projection View Control”
 
 This menu item add a control widget to the top left corner of a RoboFont glyph editing window, giving you the ability to view your glyph drawing from the ● front, ◑ side and ◓ bottom. Reopen any glyph windows to see the new control widget.
 
@@ -19,11 +19,11 @@ When you rotate the view to the ◑ side, you’ll notice that all of the points
 
 It will feel strange at first to edit the depth data this way, but thankfully whichever points you select in the ● front view remain selected when switching to the ◑ side or ◓ bottom. I usually start by making a selection while viewing a glyph from the front, switch to either the side or bottom and nudge the points with the arrow keys to move them into place.
 
-### 3D Projection Preview
+### “3D Projection Preview”
 
-Opens an interactive preview window to quickly view your 3D drawing data using the Zdog JavaScript drawing library. Click and drag the preview to rotate the drawing. Note that this preview is a fully 3D object that doesn't have the limitations of the final variable font file, but it's a helpful way to preview your drawing while you work.
+This opens an interactive preview window to quickly view your 3D drawing data using the Zdog JavaScript drawing library. Click and drag the preview to rotate the drawing. Note that this preview is a fully 3D object that doesn't have the limitations of the final variable font file, but it's a helpful way to preview your drawing while you work.
 
-### Build Rotated Masters
+### “Build Rotated Masters”
 
 To make a variable font out of your 3D glyph, the points need to be flattened out into a handful of UFO masters that will then interpolate to give the appearance of rotation. This menu item will build a folder of UFOs along with a related designSpace document that can be used to build a variable font.
 
@@ -39,7 +39,7 @@ The masters should be compatible for interpolation, but run them all through you
 
 A design decision was made for the Tilt font family that this step will not add any perspective to a glyph drawing as it’s rotated. This keeps vertical metrics flat and horizontal strokes horizontal — the baseline and cap height will always be perfectly horizontal so that you can still use the typeface to set text while still keeping the illusion that glyphs are rotating.
 
-### Rotated DesignSpace Preview
+### “Rotated DesignSpace Preview”
 
 Once you have a compatible set of UFOs and a designSpace document, you can preview the entire family and make changes to your drawings with the “Rotated DesignSpace Preview...” menu item.
 
@@ -51,8 +51,8 @@ A few buttons are provided that perform actions on the “Selected BCP” — ke
 
 ![Designspace](/images/designspace.png?raw=true)
 
-### Build a Variable Font
+### Then, build a Variable Font
 
-You're already previewing a variable font designSpace that's compatible for interpolation, the only remaining step is building it into a font. Use the Batch extension to make your final build.
+You're already previewing a variable font designSpace that's compatible for interpolation, the only remaining step is building it into a font. Use the RoboFont “Batch” extension or your tool of choice to make your final build.
 
 
