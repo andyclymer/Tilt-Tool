@@ -29,6 +29,12 @@ To make a variable font out of your 3D glyph, the points need to be flattened ou
 
 The glyphs are rotated +-45° and are saved into nine UFO masters — one default master in the middle with no rotation, surrounded by eight masters that are rotated to the maximum values on the two “HROT” and “VROT” axes.
 
+| | | |
+| :---: | :---: | :---: |
+| ↖︎ | ↑ | ↗︎ | 
+| ← | • | → |
+| ↙︎ | ↓ | ↘︎ |
+
 The masters should be compatible for interpolation, but run them all through your favorite glyph compatibility extension to fix problems.
 
 A design decision was made for the Tilt font family that this step will not add any perspective to a glyph drawing as it’s rotated. This keeps vertical metrics flat and horizontal strokes horizontal — the baseline and cap height will always be perfectly horizontal so that you can still use the typeface to set text while still keeping the illusion that glyphs are rotating.
