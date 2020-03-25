@@ -13,7 +13,7 @@ resourcesPath = os.path.join(basePath, "resources")
 B = ExtensionBundle()
 
 B.name = "3D Projection View"
-B.version = "0.12"
+B.version = "0.13"
 B.developer = "Andy Clymer"
 B.developerURL = 'http://www.andyclymer.com/'
 

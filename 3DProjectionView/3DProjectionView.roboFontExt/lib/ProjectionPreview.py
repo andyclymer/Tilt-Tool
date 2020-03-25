@@ -7,6 +7,10 @@ from mojo.extensions import getExtensionDefault, setExtensionDefault, ExtensionB
 from ZdogDraw import drawZdogGlyph
 
 
+"""
+ProjectionPreview
+by Andy Clymer
+"""
 
 class ProjectionPreviewWindow:
     
@@ -44,8 +48,6 @@ class ProjectionPreviewWindow:
         self.w.open()
         self.refreshPreviewCallback(None)
         
-        
-        
     def windowResizedCallback(self, sender):
         sv = self.w.scroll.getNSScrollView()
         self.w.webView.setFrame_(sv.frame())
@@ -81,7 +83,7 @@ class ProjectionPreviewWindow:
             for c in self.glyph.contours:
                 for pt in c.points:
                     # bring in the "z" location if it was in the lib (only for points that still exist)
-                    ident = pt.name#getIdentifier()
+                    ident = pt.name
                     if ident:
                         if ident in libData:
                             self.pointData[ident] = dict(x=pt.x, y=pt.y, z=libData[ident])

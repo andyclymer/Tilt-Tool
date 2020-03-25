@@ -5,6 +5,14 @@ import os
 from mojo.UI import GetFolder
 
 
+"""
+RotateFontWindow
+by Andy Clymer
+
+An interface for some of the basic functions of the RotateMaster extension.
+
+"""
+
     
 def getFontName(f):
     
@@ -13,20 +21,20 @@ def getFontName(f):
         familyName = f.info.openTypeNamePreferredFamilyName
     elif f.info.familyName:
         familyName = f.info.familyName
-        
+    
     styleName = None
     if f.info.openTypeNamePreferredSubfamilyName:
         styleName = f.info.openTypeNamePreferredSubfamilyName
     elif f.info.familyName:
         styleName = f.info.styleName
-
+    
     if None in [familyName, styleName]:
         if f.path:
             fullName = os.path.split(f.path)[1]
         else:
             fullName = str(f)
     else: fullName = "%s %s" % (familyName, styleName)
-
+    
     return fullName   
     
     
@@ -55,7 +63,6 @@ class RotateMasterWindow:
         self.w.copyButton = vanilla.SquareButton((10, 165, -10, 25), "Rotate!", callback=self.rotateFont)
         self.w.open()
 
-
     def outlineChanged(self, sender):
         self.w.outlineAmount.enable(self.w.outlineBox.get())
 
@@ -65,18 +72,18 @@ class RotateMasterWindow:
             
             master = self.fontList[self.w.fontChoice.get()]
             destPath = GetFolder()
-
+            
             if destPath:
             
                 if self.w.glyphChoice.get() == 1:
                     glyphNames = master.selection
                 else: glyphNames = []
-    
+                
                 if self.w.outlineBox.get():
                     outlineAmount = self.w.outlineAmount.get()
                     outlineAmount *= 0.5
                 else: outlineAmount = 0
-    
+                
                 buildDesignSpace(
                     masterFont=master,
                     destPath=destPath, 

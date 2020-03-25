@@ -1,5 +1,15 @@
 
 
+"""
+ZdogDraw
+by Andy Clymer
+
+Draw a glyph into a JavaScript file, formatted in the ZDog drawing API
+
+"""
+
+
+
 HTMLTEMPLATE = """<!doctype html>
 <html lang="en">
 <head>
@@ -119,24 +129,16 @@ def getLoc(pointData, point):
         # Invert the "z" so that a positive value in my font data is negative depth
         return (ptData["x"], CANVASHEIGHT-ptData["y"], ptData["z"])
     else: return (0, 0, 0)
-    
 
 
 def drawZdogGlyph(g, pointData=None, offset=None, stroke=20, doStroke=True, zoom=0.5, destPath=None):
     
     """
     Draw a glyph to a Zdog JS file
-    
-    To Do:
-        Optionally show handles and points
-        Possibly also take a callback to reload the HTML?
-    
     """
     
     js = ""
     prevPt = None
-    
-        
     
     if not g == None:
         
@@ -145,10 +147,7 @@ def drawZdogGlyph(g, pointData=None, offset=None, stroke=20, doStroke=True, zoom
             # Center the glyph if there's no offset given
             if offset == None:
                 glyphWidth, glyphHeight = (g.box[2] - g.box[0], g.box[3] - g.box[1])
-                #offset = (-width * 0.5, -height*0.5)
                 offset = ( -(glyphWidth*0.5),  -(glyphHeight*0.5) )
-                # offset = (0, 0)
-            
             
             for cIdx, c in enumerate(g.contours):
         
@@ -222,12 +221,3 @@ def drawZdogGlyph(g, pointData=None, offset=None, stroke=20, doStroke=True, zoom
     return js
 
 
-
-"""
-g = CurrentGlyph()
-
-canvasSize = (1000, 1000)
-width, height = (g.box[2] - g.box[0], g.box[3] - g.box[1])
-offset = (-width * 0.5, -height*0.5)
-zdogGlyph(g, offset=offset)
-"""

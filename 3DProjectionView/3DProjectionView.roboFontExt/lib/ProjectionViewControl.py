@@ -5,10 +5,18 @@ import vanilla
 import math
 import random
 import copy
-     
-     
-     
-     
+
+
+"""
+ProjectionViewControl
+by Andy Clymer
+
+Adds a widget to the RoboFont glyph editing window to switch between front/side/bottom views of a 3D drawing.
+Stores point "z" values in the glyph lib under the "com.andyclymer.zPosition" key
+
+"""
+
+
 def makeUniqueName(length=None):
     if not length:
         length = 8
@@ -46,7 +54,7 @@ class ProjectionViewControl:
         self.debug = False
         
         # Glyph and font data
-        self.glyph = None #RGlyph(self.parentWindow.getGlyph())
+        self.glyph = None
         self.LIBKEY = "com.andyclymer.zPosition"
         self.LIBKEYVIEW = "com.andyclymer.projectionViewOrientation"
         self.pointData = {} # dict of x,y,z for each pointID
@@ -66,10 +74,6 @@ class ProjectionViewControl:
         self.view.controlGroup.buttonTop = vanilla.SquareButton((40, 50, 40, 30), "◓", callback=self.rotateTop)
         self.view.controlGroup.buttonTop.enable(False)
         self.view.controlGroup.enableBox = vanilla.CheckBox((13, -38, 25, 25), "", callback=self.enableDisableCallback)
-                
-        # Update with the current glyph
-        #self.libReadGlyph()
-        #self.viewDidChangeGlyph(dict(glyph=self.glyph)) # ...since the UI is being attached after this notification would have fired
         
         addObserver(self, "viewWillChangeGlyph", "viewWillChangeGlyph")
         addObserver(self, "viewDidChangeGlyph", "viewDidChangeGlyph")
@@ -77,7 +81,7 @@ class ProjectionViewControl:
         addObserver(self, "fontDidSave", "fontDidSave")
         addObserver(self, "mouseUp", "mouseUp")
 
-    # Observers
+    # Observer callbacks and helpers
 
     def stopObserving(self, sender=None):
         # Stop observing notifications
@@ -168,8 +172,7 @@ class ProjectionViewControl:
         # Lib data changed, read it again
         if not self.holdChanges:
             self.libReadGlyph()
-            
-            
+    
     # Window Callbacks
 
     def enableDisableCallback(self, sender):
@@ -197,8 +200,6 @@ class ProjectionViewControl:
                 self.view.controlGroup.buttonSide.enable(False)
             if self.currentView == "top":
                 self.view.controlGroup.buttonTop.enable(False)
-
-    
     
     # Helper functions
     
@@ -230,7 +231,7 @@ class ProjectionViewControl:
             if didChange:
                 self.libWriteGlyph()
                 self.glyph.changed()
-
+    
     def _updateXYZPointData(self):
         if self.debug: print("_updateXYZPointData (glyph drawing changed)")
         # The glyph drawing changed, clean up the 3D point data
@@ -258,10 +259,10 @@ class ProjectionViewControl:
                                 nextIdx = 0
                             prevIdent = getSetUniqueName(c.points[ptIdx-1])
                             nextIdent = getSetUniqueName(c.points[nextIdx])
-                            # @@@ Find this segment, split the old curve in 3D
-                            # @@@ To find the segment, find the next and prev onCurve
+                            # Split this segment
                             if prevIdent in self.pointData and nextIdent in self.pointData:
                                 # Interpolate the prev/next values (it's better than nothing)
+                                # @@@@ TODO: Split the curve in 3D space
                                 tempData = dict(
                                     x=interpolate(0.5, self.pointData[prevIdent]["x"], self.pointData[nextIdent]["x"]),
                                     y=interpolate(0.5, self.pointData[prevIdent]["y"], self.pointData[nextIdent]["y"]),
@@ -337,7 +338,7 @@ class ProjectionViewControl:
                 print(ptId, loc)
             return False
         else: return True
-             
+    
     def libWriteGlyph(self):
         if self.debug: print("libWriteGlyph", self.glyph, self.enableProjection)
         if self.debug:
@@ -347,7 +348,6 @@ class ProjectionViewControl:
             if not glyphCurrentView == self.currentView:
                 # Don't write, because the lib thinks it should be in a different view
                 print("VIEW PROBLEM when writing, glyph", glyphCurentView, "current", self.currentView)
-                # @@@ Rotate back to the front?
         # Write the point data back to the glyph lib
         if self.enableProjection:
             if not self.glyph == None:
@@ -433,11 +433,6 @@ class UIManager:
         addObserver(self, "glyphWindowWillClose", "glyphWindowWillClose")
         
         self.windowsAndViews = {}
-        
-        # Debug window
-        #self.w = vanilla.FloatingWindow((200, 40), "UIManager")
-        #self.w.bind("close", self.stopObserving)
-        #self.w.open()
     
     def stopObserving(self, sender=None):
         # Stop observing notifications
