@@ -3,11 +3,15 @@ by Andy Clymer
 
 The *3D Projection View* RoboFont Extension enables you to add depth to a drawing by moving points along the "z" axis instead of only "x" and "y", can build a variable font designSpace that gives the appearance of being able to rotate glyph drawings.
 
+![Interface](/images/ui-animation.gif?raw=true)
+
 The workflow for drawing in 3D is broken out into four different functions —
 
 ### Enable 3D Projection View Control
 
 This menu item add a control widget to the top left corner of a RoboFont glyph editing window, giving you the ability to view your glyph drawing from the ● front, ◑ side and ◓ bottom. Reopen any glyph windows to see the new control widget.
+
+![UI Control](/images/ui-control.png?raw=true)
 
 You’re probably accustomed to drawing in two dimensions, where each point location can be described as a having a horizontal value along the glyph’s width (which can be said to be on the “x” axis in a grid) and a vertical value along its height (on the “y” axis). To add depth to a drawing we need a way to move the points closer or further away (along the “z” axis).
 
@@ -38,6 +42,8 @@ Opening the designSpace document will open and position all nine UFOs on screen.
 After editing a glyph, save the font and click “Update/Reload Fonts” button to refresh the preview in the window.
 
 A few buttons are provided that perform actions on the “Selected BCP” — keeping off-curve point ratios the same between masters is very important to avoid kinks in an interpolation, the buttons will try to match the offCurve ratios to that of the “default” middle master which can be a helpful starting point when editing. Once the ratios are set, there are buttons to extend and retract offCurves at set percentages, which can also help with editing.
+
+![Designspace](/images/designspace.png?raw=true)
 
 ### Build a Variable Font
 
