@@ -1,7 +1,7 @@
 # 3D Projection View
 by Andy Clymer
 
-The *3D Projection View* RoboFont Extension enables you to add depth to a drawing by moving points along the "z" axis instead of only "x" and "y", can build a variable font designSpace that gives the appearance of being able to rotate glyph drawings.
+The *3D Projection View* RoboFont Extension enables you to add depth to a drawing by moving points along the “z” axis instead of only “x” and “y”, can build a variable font designSpace that gives the appearance of being able to rotate glyph drawings.
 
 ![Interface](/images/ui-animation.gif?raw=true)
 
@@ -27,7 +27,7 @@ Opens an interactive preview window to quickly view your 3D drawing data using t
 
 To make a variable font out of your 3D glyph, the points need to be flattened out into a handful of UFO masters that will then interpolate to give the appearance of rotation. This menu item will build a folder of UFOs along with a related designSpace document that can be used to build a variable font.
 
-The glyphs are rotated +-45° and are saved into nine UFO masters — one default master in the middle with no rotation, surrounded by eight masters that are rotated to the maximum values on the two “HROT” and “VROT” axes.
+The glyphs are rotated ±45° and are saved into nine UFO masters — one default master in the middle with no rotation, surrounded by eight masters that are rotated to the maximum values on the two “HROT” and “VROT” axes.
 
 | | | |
 | :---: | :---: | :---: |
@@ -54,4 +54,5 @@ A few buttons are provided that perform actions on the “Selected BCP” — ke
 ### Build a Variable Font
 
 You're already previewing a variable font designSpace that's compatible for interpolation, the only remaining step is building it into a font. Use the Batch extension to make your final build.
+
 
