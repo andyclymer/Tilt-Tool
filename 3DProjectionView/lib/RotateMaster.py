@@ -1,13 +1,22 @@
 from fontTools.designspaceLib import DesignSpaceDocument, AxisDescriptor, SourceDescriptor, RuleDescriptor
 from fontParts.world import OpenFont, NewFont
-from euclid import *
-from outlineFitterPen import OutlineFitterPen, MathPoint
+from pyeuclid.euclid import *
+from outliner.outlineFitterPen import OutlineFitterPen, MathPoint
 import math
 import os
 import copy
 import random
 
 import outlineFitterPen
+
+
+"""
+RotateMaster
+by Andy Clymer
+
+Takes a UFO master containing 3D point data and builds a folder full of flattened UFO masters and a designspace file.
+
+"""
 
 
 AXISINFO = {
@@ -66,7 +75,6 @@ def readGlyphPointData(glyph):
                 pointData[ident] = dict(x=pt.x, y=pt.y, z=zLoc)
     return pointData
 
-
 def boundsCenter(bounds):
     return (bounds[2]+bounds[0]) * 0.5, (bounds[3]+bounds[1]) *0.5
 
@@ -94,7 +102,6 @@ def forceSmooth(bPt):
         newOut = MathPoint(math.cos(avgAngle), math.sin(avgAngle)) * distOut
         bPt.bcpIn = (newIn.x, newIn.y)
         bPt.bcpOut = (-newOut.x, -newOut.y) 
-        
 
 
 def checkCurveSegmentOverlap(pt0, pt1, pt2, pt3):
@@ -127,8 +134,8 @@ def checkCurveSegmentOverlap(pt0, pt1, pt2, pt3):
         elif p0[1] == p1[1]:
             return ["y"]
         else: return ["x", "y"]
-    
-    
+
+
 def checkCurveOverlap(glyph):
     # Test all segments in the glyph to see if any overlap with themselves
     # Return a list of "x" and "y" for the axis that the overlap aligns on
@@ -182,10 +189,7 @@ def rotateGlyphPointData(g, loc, pointData, angle=45, aLoc=None):
     for ident in pointData:
         # make a vector object
         v = Vector3(pointData[ident]["x"], pointData[ident]["y"], pointData[ident]["z"])
-
-        # Invert the "z" position @@@ no longer necessary
-        #v.z = -v.z
-        #v.z = v.z * 0.5
+        
         # Translate
         m = Matrix4.new_translate(-aLoc[0], -aLoc[1], -aLoc[2])
         v = m.transform(v)
@@ -219,7 +223,6 @@ def rotateGlyphPointData(g, loc, pointData, angle=45, aLoc=None):
     marginChange = int(round(v[0])), int(round(v[1]))
                 
     return marginChange, pointData
-
 
 
 def flattenShadow(g, pointData, shadowDirection="right", shadowLengthFactor=1):
@@ -379,9 +382,6 @@ def buildDesignSpace(
                 sourceCombinations.append(sourceInfo)
     
     # Process the sourceCombinations and make SubSources if necessary
-    #print("needSubHROT", needSubHROT)
-    #print("needSubVROT", needSubVROT)
-    # @@@ Temporarily force all glyphs to be in all submasters
     needSubHROT = glyphNames
     needSubVROT = glyphNames
     if doMakeSubSources:
@@ -563,9 +563,6 @@ def buildDesignSpace(
                 # Round the point coordinates again, now that it's outlined
                 gDest.round()
                 gDest.changed()
-                
-            # Update
-            #gDest.changed()
             
         # Resort the font
         sourceFont.glyphOrder = masterFont.glyphOrder
