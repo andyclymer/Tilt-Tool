@@ -1,7 +1,7 @@
 # 3D Projection View
 by Andy Clymer
 
-The *3D Projection View* RoboFont Extension enables you add depth to a drawing and build UFO sources for a variable font that can has the appearance of horizontal and vertical rotation.
+The *3D Projection View* RoboFont Extension enables you add depth to a drawing and build UFO sources for a variable font with the appearance of horizontal and vertical rotation.
 
 The extension was built for the Tilt typeface family.
 
@@ -43,7 +43,7 @@ The glyphs are rotated through the range of ±45° and are saved into nine UFO m
 | ← | • | → |
 | ↙︎ | ↓ | ↘︎ |
 
-*About the file names: masters are built on the “HROT” and “VROT” axes at “d” _d_efault, “n” mi_n_imum and ”x” ma_x_imum locations. I found these three letters easier to keep track of in the file names instead of the numeric values — “Source-HROTn_VROTx.ufo” is at the minimum HROT value (-45) and the maximum VROT value (+45)*
+A note about the file names: masters are built on the “HROT” and “VROT” axes at “d” ***d***efault, “n” mi***n***imum and ”x” ma***x***imum locations. I found these three letters easier to keep track of in the file names instead of the numeric values — “Source-HROTn_VROTx.ufo” is at the minimum HROT value (-45) and the maximum VROT value (+45)
 
 The UFO masters built this way should be compatible for interpolation, but run them all through your favorite glyph compatibility extension to check and fix any problems that may have come up.
 
