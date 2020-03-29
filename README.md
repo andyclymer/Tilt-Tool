@@ -1,13 +1,13 @@
 # 3D Projection View
 by Andy Clymer
 
-The *3D Projection View* RoboFont Extension enables you add depth to a drawing and build UFO sources for a variable font with the appearance of horizontal and vertical rotation.
+The *3D Projection View* RoboFont Extension enables you add depth to a drawing, and to build UFO sources for a variable font that has the appearance of horizontal and vertical rotation.
 
-The extension was built for the Tilt typeface family.
+The extension was built for the [Tilt typeface](https://github.com/andyclymer/Tilt-Typeface/).
 
 ![Interface](/images/ui-animation.gif?raw=true)
 
-The workflow for drawing in 3D is broken out into four different functions, with their own menu items —
+The workflow for using this tool to draw in 3D is broken out into four different functions, with their own menu items in the extension —
 
 ### “Enable 3D Projection View Control”
 
