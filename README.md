@@ -65,3 +65,11 @@ A few buttons are provided that perform actions on the “Selected BCP” — ke
 
 You're already previewing a variable font designSpace that's compatible for interpolation, the only remaining step is building it into a font. Use the RoboFont “Batch” extension or your tool of choice to make your final build.
 
+## License
+
+The Tilt Tool is licensed under the [Apache License](LICENSE.txt). Please refer to the full text of the license for details about the permissions, conditions, and disclaimers.
+
+Portions of the code have been annotated with their own copyrights and licenses:
+- [outlinePen](3DProjectionView/lib/outliner), Copyright (c) 2016 Frederik Berlaen, The MIT License (MIT)
+- [pyeuclid](3DProjectionView/lib/pyeuclid), Copyright © 2006 Alex Holkner Copyright © 2011–2012 Eugen Zagorodniy Copyright © 2011–2012 Dov Grobgeld Copyright © 2012 Lorenzo Riano, GNU Lesser General Public License
+
