@@ -1,0 +1,73 @@
+<html>
+
+<head>
+	<meta charset="utf-8">
+	
+	<title>3D Projection View</title>
+
+    <style type="text/css">
+    <!--
+    
+    h1 {font-family: 'American Typewriter'; font-size: 40; font-weight: normal; line-height:1em;}
+    h3 {font-family: 'American Typewriter'; font-size: 18; font-weight: 500; line-height:1em;}
+    body {font-family: 'Lucida Grande', 'Lucida Sans', 'Verdana', 'Helvetica', 'Arial'; font-size:12; line-height:1.35em; margin:30px;}
+    .tt {font-size:14; font-family: monospace; line-height:1.25em;}
+    
+    -->
+    </style>
+
+
+</head>
+
+<body>
+
+<h1>3D Projection View</h1>
+<p>by Andy Clymer<br><a href="http://www.andyclymer.com/">www.andyclymer.com</a></p>
+
+
+<p>The 3D Projection View RoboFont extension was created for the Tilt typeface, to add 3D depth to a drawing and build a variable font designSpace that gives the appearance of being able to rotate glyph drawings.
+
+<p>The workflow for drawing in 3D is broken out into four different functions —</p>
+
+<h3>Enable 3D Projection View Control</h3>
+
+<p>To get started, choose the “Enable 3D Projection View Control” menu item to add a widget to the top left corner of a RoboFont editing window. This new editing control gives you the ability to view your glyph drawing from the front, side and bottom. The glyph point positions are usually only recorded as “x” and “y” values for their horizontal and vertical position, but when viewing a glyph from the bottom or side you can also move points into a “z” position for depth.</p>
+
+<p>After enabling the “3D Projection View Control” you will need to reopen a window to see the new control in a glyph window. Toggle the checkbox in the widget to turn the control on or off, and click the buttons to rotate your glyph view.</p>
+
+<h3>3D Projection Preview</h3>
+
+<p>Now that you're drawing in 3D, you can open a preview window with the “3D Projection Preview...” menu item. This preview takes your 3D point data and uses the Zdog JavaScript library to render a preview that you can click and drag to rotate. </p>
+
+<p>The preview won't update live as you edit a glyph drawing, click the “Reload glyph data” after editing to update the glyph preview. </p>
+
+<p>While this preview is a fully 3D object that you can rotate in any direction, please note the final font that you'll export from this extension will only have a limited range of rotation.</p>
+
+<h3>Build Rotated Masters</h3>
+
+<p>After you're satisfied with your drawing, you can choose the “Build Rotated Masters...” menu item to flatten your 3D drawings out into a folder of UFO masters and a designSpace document. </p>
+
+<p>The glyphs are rotated +-45° into nine masters — one default master in the middle with no rotation, surrounded by eight masters that are rotated to the maximum values on the two “HROT” and “VROT” axes.</p>
+
+<p>The masters should be compatible for interpolation, but run them all through your favorite glyph compatibility extension to fix problems.</p>
+
+<p>A design decision was made for the Tilt font family that this step will not add any perspective to a glyph drawing as it’s roatated, to keep vertical metrics flat and horizontal strokes horizontal — the baseline and cap height will always be flat, so that you can still use the typeface to set text.</p>
+
+<h3>Rotated DesignSpace Preview</h3>
+
+<p>Once you have a compatible set of UFOs and a designSpace document, you can preview the entire family and make changes to your drawings with the “Rotated DesignSpace Preview...” menu item.</p>
+
+<p>Opening the designSpace document will open and position all nine UFOs on screen. Choose a glyph by name, and preview how the points move along the “HROT” and “VROT” axes. </p>
+
+<p>After editing a glyph, save the font and click “Update/Reload Fonts” button to refresh the preview in the window.</p>
+
+<p>A few buttons are provided that perform actions on the “Selected BCP” — keeping off-curve point ratios the same between masters is very important to avoid kinks in an interpolation, the buttons will try to match the offCurve ratios to that of the “default” middle master which can be a helpful starting point when editing. Once the ratios are set, there are buttons to extend and retract offCurves at set percentages, which can also help with editing.</p>
+
+<h3>Build a Variable Font</h3>
+
+<p>You're already previewing a variable font designSpace that's compatible for interpolation, the only remaining step is building it into a font. Use the Batch extension to make your final build.</p>
+
+
+
+</body>
+</html>
